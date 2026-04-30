@@ -1,0 +1,67 @@
+---
+title: "学習ログ #1：Polars に入門してみた"
+description: "pandas から Polars に乗り換えるメリットを、実務でよくある処理を書き換えながら確認した初日のメモ。"
+date: "2026-04-30"
+categories: [学習ログ, Python, データ処理]
+author: "シロ"
+---
+
+## はじめに
+
+最近 Python のデータ処理ライブラリ **Polars** の話をよく聞くようになったので、業務で書いている pandas のコードを少しずつ書き換えながら触ってみた、初日の感想メモです。
+
+## なぜ pandas から Polars を試そうと思ったか
+
+ざっくり以下の理由:
+
+- 実行速度が pandas より速いと評判
+- 構文が SQL に近くて、後から読みやすい
+- `with_columns` など、複数カラムを一気に作るのが書きやすそう
+
+正直、業務のデータ量だと pandas で困ってはいないので、置き換える必然性はないけど、**学習ログ的に触ってみる**ことが目的。
+
+## 触ってみたコード
+
+CSVを読んで、グループ集計するシンプルな処理を pandas / Polars で書き比べてみました。
+
+```python
+# pandas 版
+import pandas as pd
+
+df = pd.read_csv("sales.csv")
+result = (
+    df.groupby("category")
+      .agg({"amount": "sum", "user_id": "nunique"})
+      .reset_index()
+)
+```
+
+```python
+# Polars 版
+import polars as pl
+
+df = pl.read_csv("sales.csv")
+result = (
+    df.group_by("category")
+      .agg(
+          pl.col("amount").sum(),
+          pl.col("user_id").n_unique(),
+      )
+)
+```
+
+## 一日触ってみた所感
+
+- **速度**: 体感では明確に速い。100万行くらいのCSVで明らかに違いを感じた
+- **構文**: `pl.col("...")` を毎回書くのは少し冗長に見えるけど、複数列を一気に処理するときに統一感があって読みやすい
+- **エコシステム**: pandas に比べるとライブラリの対応がまだ少なめ。可視化や ML ライブラリと組み合わせるときに `to_pandas()` を挟む場面はありそう
+
+## 次にやること
+
+- `lazy()` を使った遅延評価を試す
+- 自分が普段書く前処理スクリプトを1本まるごと Polars で書き直してみる
+- ベンチマークを実際に取って、どのくらい速いのか数字で確認する
+
+---
+
+学習ログはこんな感じで、その日触ったことをサクッと残していく予定です。
