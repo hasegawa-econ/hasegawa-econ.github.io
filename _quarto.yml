@@ -3,30 +3,19 @@ project:
   output-dir: docs
 
 website:
-  title: "Your Name"
-  description: "Researcher | Your Field | Your Institution"
+  title: "シロのブログ"
+  description: "データサイエンス・統計・経済学の学習ログと読書メモ"
   favicon: assets/favicon.ico
 
   navbar:
     left:
-      - text: "Home"
+      - text: "ホーム"
         href: index.qmd
-      - text: "Blog"
+      - text: "ブログ"
         href: blog/index.qmd
-      - text: "Research"
-        href: research.qmd
-      - text: "About"
-        href: about.qmd
-    right:
-      - icon: github
-        href: https://github.com/yourusername
-      - icon: twitter
-        href: https://twitter.com/yourusername
-      - icon: envelope
-        href: mailto:you@example.com
 
   page-footer:
-    left: "© 2024 Your Name"
+    left: "© 2026 シロ"
     right: "Built with [Quarto](https://quarto.org)"
 
 format:

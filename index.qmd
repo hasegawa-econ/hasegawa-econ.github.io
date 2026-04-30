@@ -1,59 +1,21 @@
 ---
-title: "Your Name"
-subtitle: "PhD Student / Researcher in [Your Field]"
-image: assets/profile.jpg
-about:
-  template: trestles
-  image-shape: round
-  image-width: 12em
-  links:
-    - icon: github
-      text: GitHub
-      href: https://github.com/yourusername
-    - icon: twitter
-      text: Twitter
-      href: https://twitter.com/yourusername
-    - icon: envelope
-      text: Email
-      href: mailto:you@example.com
-    - icon: file-person
-      text: CV
-      href: assets/cv.pdf
-page-layout: full
+title: "シロ"
+subtitle: "データサイエンティスト（都内某所）／ 経済学博士課程（休学中）"
+# プロフィール画像を追加するときは下の image 行を有効化し、about ブロックも有効化してください
+# image: assets/profile.jpg
+# about:
+#   template: trestles
+#   image-shape: round
+#   image-width: 12em
+page-layout: article
 ---
 
-## About me
+## はじめに
 
-I am a researcher at **[Your Institution]** working on [your research topic].
-My work focuses on [brief description of your research interests].
+こんにちは、**シロ**です。
+都内でデータサイエンティストとして働きながら、経済学の博士課程に在籍しています（現在は休学中）。
 
-I'm passionate about [topics you care about], and I write about
-[technical topics / academic insights / essays] on this site.
+このブログでは、日々の**学習ログ**や**読んだ本のメモ**を書き残しています。
+データサイエンス・統計・経済学が中心になる予定ですが、興味の赴くままに書いていきます。
 
----
-
-## Research Interests
-
-- Topic 1
-- Topic 2  
-- Topic 3
-
----
-
-## Recent Posts
-
-```{=html}
-<div id="recent-posts">
-  See the <a href="blog/index.qmd">Blog</a> for my latest writing.
-</div>
-```
-
----
-
-## Education
-
-**PhD, [Your Field]** | [Institution] | 2020 – Present
-
-**MSc, [Your Field]** | [Institution] | 2018 – 2020
-
-**BSc, [Your Field]** | [Institution] | 2014 – 2018
+同じテーマに関心のある方の参考に少しでもなれば嬉しいです。

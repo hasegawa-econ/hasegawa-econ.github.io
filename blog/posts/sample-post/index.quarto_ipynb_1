@@ -1,0 +1,90 @@
+{
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "---\n",
+        "title: \"はじめての技術記事：Pythonでデータ可視化\"\n",
+        "description: \"matplotlibとseabornを使ってきれいなグラフを作る方法\"\n",
+        "date: \"2024-01-15\"\n",
+        "categories: [Python, Data Visualization, Tutorial]\n",
+        "image: thumbnail.png\n",
+        "---\n",
+        "\n",
+        "## はじめに\n",
+        "\n",
+        "この記事では、Pythonを使ったデータ可視化の基本を紹介します。\n",
+        "\n",
+        "## 必要なライブラリ"
+      ],
+      "id": "b7e54434"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "#| eval: false\n",
+        "import numpy as np\n",
+        "import matplotlib.pyplot as plt\n",
+        "import seaborn as sns\n",
+        "\n",
+        "# スタイルの設定\n",
+        "sns.set_theme(style=\"whitegrid\")"
+      ],
+      "id": "4bef22e3",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## シンプルなグラフを作る"
+      ],
+      "id": "bd8cf814"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "#| eval: false\n",
+        "x = np.linspace(0, 2 * np.pi, 100)\n",
+        "y = np.sin(x)\n",
+        "\n",
+        "plt.figure(figsize=(8, 4))\n",
+        "plt.plot(x, y, color='steelblue', linewidth=2)\n",
+        "plt.title(\"Sine Wave\")\n",
+        "plt.xlabel(\"x\")\n",
+        "plt.ylabel(\"sin(x)\")\n",
+        "plt.tight_layout()\n",
+        "plt.show()"
+      ],
+      "id": "2dfcddb8",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## まとめ\n",
+        "\n",
+        "- `matplotlib` は柔軟性が高く、細かいカスタマイズが可能\n",
+        "- `seaborn` は統計グラフを簡単に作れる\n",
+        "- Quartoを使えば、このコードと結果を一緒にブログに載せられる！"
+      ],
+      "id": "97a51ec8"
+    }
+  ],
+  "metadata": {
+    "kernelspec": {
+      "name": "python3",
+      "language": "python",
+      "display_name": "Python 3 (ipykernel)",
+      "path": "/opt/anaconda3/share/jupyter/kernels/python3"
+    }
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+}
