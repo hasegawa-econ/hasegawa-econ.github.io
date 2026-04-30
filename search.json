@@ -1,0 +1,135 @@
+[
+  {
+    "objectID": "about.html",
+    "href": "about.html",
+    "title": "About",
+    "section": "",
+    "text": "[Your full bio here. Talk about your background, research journey, and what you’re working on now.]"
+  },
+  {
+    "objectID": "about.html#bio",
+    "href": "about.html#bio",
+    "title": "About",
+    "section": "",
+    "text": "[Your full bio here. Talk about your background, research journey, and what you’re working on now.]"
+  },
+  {
+    "objectID": "about.html#contact",
+    "href": "about.html#contact",
+    "title": "About",
+    "section": "Contact",
+    "text": "Contact\n📧 Email: you@example.com\n🏛 Office: Room XXX, Building Name, Institution\n🐦 Twitter: @yourusername\n💻 GitHub: yourusername"
+  },
+  {
+    "objectID": "about.html#this-site",
+    "href": "about.html#this-site",
+    "title": "About",
+    "section": "This Site",
+    "text": "This Site\nThis site is built with Quarto and hosted on GitHub Pages.\nThe source code is available here."
+  },
+  {
+    "objectID": "blog/posts/sample-post/index.html",
+    "href": "blog/posts/sample-post/index.html",
+    "title": "はじめての技術記事：Pythonでデータ可視化",
+    "section": "",
+    "text": "この記事では、Pythonを使ったデータ可視化の基本を紹介します。"
+  },
+  {
+    "objectID": "blog/posts/sample-post/index.html#はじめに",
+    "href": "blog/posts/sample-post/index.html#はじめに",
+    "title": "はじめての技術記事：Pythonでデータ可視化",
+    "section": "",
+    "text": "この記事では、Pythonを使ったデータ可視化の基本を紹介します。"
+  },
+  {
+    "objectID": "blog/posts/sample-post/index.html#必要なライブラリ",
+    "href": "blog/posts/sample-post/index.html#必要なライブラリ",
+    "title": "はじめての技術記事：Pythonでデータ可視化",
+    "section": "必要なライブラリ",
+    "text": "必要なライブラリ\n\n\nCode\nimport numpy as np\nimport matplotlib.pyplot as plt\nimport seaborn as sns\n\n# スタイルの設定\nsns.set_theme(style=\"whitegrid\")"
+  },
+  {
+    "objectID": "blog/posts/sample-post/index.html#シンプルなグラフを作る",
+    "href": "blog/posts/sample-post/index.html#シンプルなグラフを作る",
+    "title": "はじめての技術記事：Pythonでデータ可視化",
+    "section": "シンプルなグラフを作る",
+    "text": "シンプルなグラフを作る\n\n\nCode\nx = np.linspace(0, 2 * np.pi, 100)\ny = np.sin(x)\n\nplt.figure(figsize=(8, 4))\nplt.plot(x, y, color='steelblue', linewidth=2)\nplt.title(\"Sine Wave\")\nplt.xlabel(\"x\")\nplt.ylabel(\"sin(x)\")\nplt.tight_layout()\nplt.show()"
+  },
+  {
+    "objectID": "blog/posts/sample-post/index.html#まとめ",
+    "href": "blog/posts/sample-post/index.html#まとめ",
+    "title": "はじめての技術記事：Pythonでデータ可視化",
+    "section": "まとめ",
+    "text": "まとめ\n\nmatplotlib は柔軟性が高く、細かいカスタマイズが可能\nseaborn は統計グラフを簡単に作れる\nQuartoを使えば、このコードと結果を一緒にブログに載せられる！"
+  },
+  {
+    "objectID": "research.html",
+    "href": "research.html",
+    "title": "Research",
+    "section": "",
+    "text": "[Paper Title]\nYour Name, Co-author Name\nJournal Name, 2024\n📄 PDF | 🔗 Code | 📊 Data\n\nAbstract: Brief description of the paper…\n\n\n\n\n\n[Paper Title]\nYour Name, Co-author Name\nConference Name, 2023\n📄 PDF | 🔗 Code"
+  },
+  {
+    "objectID": "research.html#publications",
+    "href": "research.html#publications",
+    "title": "Research",
+    "section": "",
+    "text": "[Paper Title]\nYour Name, Co-author Name\nJournal Name, 2024\n📄 PDF | 🔗 Code | 📊 Data\n\nAbstract: Brief description of the paper…\n\n\n\n\n\n[Paper Title]\nYour Name, Co-author Name\nConference Name, 2023\n📄 PDF | 🔗 Code"
+  },
+  {
+    "objectID": "research.html#working-papers",
+    "href": "research.html#working-papers",
+    "title": "Research",
+    "section": "Working Papers",
+    "text": "Working Papers\n[Working Paper Title]\nYour Name\nDraft, 2024"
+  },
+  {
+    "objectID": "research.html#talks-presentations",
+    "href": "research.html#talks-presentations",
+    "title": "Research",
+    "section": "Talks & Presentations",
+    "text": "Talks & Presentations\n\n[Talk Title] | Conference Name | 2024\n[Talk Title] | Workshop Name | 2023"
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "Your Name",
+    "section": "",
+    "text": "I am a researcher at [Your Institution] working on [your research topic]. My work focuses on [brief description of your research interests].\nI’m passionate about [topics you care about], and I write about [technical topics / academic insights / essays] on this site."
+  },
+  {
+    "objectID": "index.html#about-me",
+    "href": "index.html#about-me",
+    "title": "Your Name",
+    "section": "",
+    "text": "I am a researcher at [Your Institution] working on [your research topic]. My work focuses on [brief description of your research interests].\nI’m passionate about [topics you care about], and I write about [technical topics / academic insights / essays] on this site."
+  },
+  {
+    "objectID": "index.html#research-interests",
+    "href": "index.html#research-interests",
+    "title": "Your Name",
+    "section": "Research Interests",
+    "text": "Research Interests\n\nTopic 1\nTopic 2\n\nTopic 3"
+  },
+  {
+    "objectID": "index.html#recent-posts",
+    "href": "index.html#recent-posts",
+    "title": "Your Name",
+    "section": "Recent Posts",
+    "text": "Recent Posts\n\n  See the Blog for my latest writing."
+  },
+  {
+    "objectID": "index.html#education",
+    "href": "index.html#education",
+    "title": "Your Name",
+    "section": "Education",
+    "text": "Education\nPhD, [Your Field] | [Institution] | 2020 – Present\nMSc, [Your Field] | [Institution] | 2018 – 2020\nBSc, [Your Field] | [Institution] | 2014 – 2018"
+  },
+  {
+    "objectID": "blog/index.html",
+    "href": "blog/index.html",
+    "title": "Blog",
+    "section": "",
+    "text": "はじめての技術記事：Pythonでデータ可視化\n\n\n\nPython\n\nData Visualization\n\nTutorial\n\n\n\nmatplotlibとseabornを使ってきれいなグラフを作る方法\n\n\n\n\n\nJan 15, 2024\n\n1 min\n\n\n\n\nNo matching items"
+  }
+]
