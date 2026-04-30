@@ -63,67 +63,18 @@
     "text": "まとめ\n\nmatplotlib は柔軟性が高く、細かいカスタマイズが可能\nseaborn は統計グラフを簡単に作れる\nQuartoを使えば、このコードと結果を一緒にブログに載せられる！"
   },
   {
-    "objectID": "research.html",
-    "href": "research.html",
-    "title": "Research",
-    "section": "",
-    "text": "[Paper Title]\nYour Name, Co-author Name\nJournal Name, 2024\n📄 PDF | 🔗 Code | 📊 Data\n\nAbstract: Brief description of the paper…\n\n\n\n\n\n[Paper Title]\nYour Name, Co-author Name\nConference Name, 2023\n📄 PDF | 🔗 Code"
-  },
-  {
-    "objectID": "research.html#publications",
-    "href": "research.html#publications",
-    "title": "Research",
-    "section": "",
-    "text": "[Paper Title]\nYour Name, Co-author Name\nJournal Name, 2024\n📄 PDF | 🔗 Code | 📊 Data\n\nAbstract: Brief description of the paper…\n\n\n\n\n\n[Paper Title]\nYour Name, Co-author Name\nConference Name, 2023\n📄 PDF | 🔗 Code"
-  },
-  {
-    "objectID": "research.html#working-papers",
-    "href": "research.html#working-papers",
-    "title": "Research",
-    "section": "Working Papers",
-    "text": "Working Papers\n[Working Paper Title]\nYour Name\nDraft, 2024"
-  },
-  {
-    "objectID": "research.html#talks-presentations",
-    "href": "research.html#talks-presentations",
-    "title": "Research",
-    "section": "Talks & Presentations",
-    "text": "Talks & Presentations\n\n[Talk Title] | Conference Name | 2024\n[Talk Title] | Workshop Name | 2023"
-  },
-  {
     "objectID": "index.html",
     "href": "index.html",
-    "title": "Your Name",
+    "title": "シロ",
     "section": "",
-    "text": "I am a researcher at [Your Institution] working on [your research topic]. My work focuses on [brief description of your research interests].\nI’m passionate about [topics you care about], and I write about [technical topics / academic insights / essays] on this site."
+    "text": "こんにちは、シロです。 都内でデータサイエンティストとして働きながら、経済学の博士課程に在籍しています（現在は休学中）。\nこのブログでは、日々の学習ログや読んだ本のメモを書き残しています。 データサイエンス・統計・経済学が中心になる予定ですが、興味の赴くままに書いていきます。\n同じテーマに関心のある方の参考に少しでもなれば嬉しいです。"
   },
   {
-    "objectID": "index.html#about-me",
-    "href": "index.html#about-me",
-    "title": "Your Name",
+    "objectID": "index.html#はじめに",
+    "href": "index.html#はじめに",
+    "title": "シロ",
     "section": "",
-    "text": "I am a researcher at [Your Institution] working on [your research topic]. My work focuses on [brief description of your research interests].\nI’m passionate about [topics you care about], and I write about [technical topics / academic insights / essays] on this site."
-  },
-  {
-    "objectID": "index.html#research-interests",
-    "href": "index.html#research-interests",
-    "title": "Your Name",
-    "section": "Research Interests",
-    "text": "Research Interests\n\nTopic 1\nTopic 2\n\nTopic 3"
-  },
-  {
-    "objectID": "index.html#recent-posts",
-    "href": "index.html#recent-posts",
-    "title": "Your Name",
-    "section": "Recent Posts",
-    "text": "Recent Posts\n\n  See the Blog for my latest writing."
-  },
-  {
-    "objectID": "index.html#education",
-    "href": "index.html#education",
-    "title": "Your Name",
-    "section": "Education",
-    "text": "Education\nPhD, [Your Field] | [Institution] | 2020 – Present\nMSc, [Your Field] | [Institution] | 2018 – 2020\nBSc, [Your Field] | [Institution] | 2014 – 2018"
+    "text": "こんにちは、シロです。 都内でデータサイエンティストとして働きながら、経済学の博士課程に在籍しています（現在は休学中）。\nこのブログでは、日々の学習ログや読んだ本のメモを書き残しています。 データサイエンス・統計・経済学が中心になる予定ですが、興味の赴くままに書いていきます。\n同じテーマに関心のある方の参考に少しでもなれば嬉しいです。"
   },
   {
     "objectID": "blog/index.html",
