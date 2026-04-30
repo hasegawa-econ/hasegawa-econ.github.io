@@ -1,0 +1,45 @@
+---
+title: "はじめての技術記事：Pythonでデータ可視化"
+description: "matplotlibとseabornを使ってきれいなグラフを作る方法"
+date: "2024-01-15"
+categories: [Python, Data Visualization, Tutorial]
+image: thumbnail.png
+---
+
+## はじめに
+
+この記事では、Pythonを使ったデータ可視化の基本を紹介します。
+
+## 必要なライブラリ
+
+```{python}
+#| eval: false
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# スタイルの設定
+sns.set_theme(style="whitegrid")
+```
+
+## シンプルなグラフを作る
+
+```{python}
+#| eval: false
+x = np.linspace(0, 2 * np.pi, 100)
+y = np.sin(x)
+
+plt.figure(figsize=(8, 4))
+plt.plot(x, y, color='steelblue', linewidth=2)
+plt.title("Sine Wave")
+plt.xlabel("x")
+plt.ylabel("sin(x)")
+plt.tight_layout()
+plt.show()
+```
+
+## まとめ
+
+- `matplotlib` は柔軟性が高く、細かいカスタマイズが可能
+- `seaborn` は統計グラフを簡単に作れる
+- Quartoを使えば、このコードと結果を一緒にブログに載せられる！

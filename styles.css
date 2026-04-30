@@ -1,0 +1,76 @@
+/* ===== General ===== */
+body {
+  font-family: 'Georgia', serif;
+  line-height: 1.8;
+}
+
+h1, h2, h3, h4 {
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-weight: 600;
+}
+
+/* ===== Navbar ===== */
+.navbar {
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.navbar-brand {
+  font-weight: 700;
+  font-size: 1.1rem;
+  letter-spacing: 0.02em;
+}
+
+/* ===== About / Profile page ===== */
+.quarto-about-trestles .about-entity {
+  border-right: none;
+}
+
+.quarto-about-trestles .about-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.about-link {
+  border: 1px solid #dee2e6 !important;
+  border-radius: 6px !important;
+  padding: 0.4rem 0.9rem !important;
+  font-size: 0.9rem !important;
+  transition: all 0.2s ease;
+}
+
+.about-link:hover {
+  background-color: #0d6efd !important;
+  color: white !important;
+  border-color: #0d6efd !important;
+}
+
+/* ===== Blog listing ===== */
+.quarto-listing-default .listing-date {
+  color: #6c757d;
+  font-size: 0.88rem;
+}
+
+.quarto-listing-default .listing-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+/* ===== Code blocks ===== */
+pre {
+  border-radius: 8px;
+  border: 1px solid #e5e5e5;
+}
+
+/* ===== Footer ===== */
+.nav-footer {
+  border-top: 1px solid #e5e5e5;
+  font-size: 0.88rem;
+  color: #6c757d;
+}
+
+/* ===== Reading width ===== */
+.page-columns .column-body {
+  max-width: 740px;
+}

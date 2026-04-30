@@ -1,0 +1,26 @@
+---
+title: "About"
+---
+
+## Bio
+
+[Your full bio here. Talk about your background, research journey,
+and what you're working on now.]
+
+---
+
+## Contact
+
+📧 **Email:** you@example.com  
+🏛 **Office:** Room XXX, Building Name, Institution  
+🐦 **Twitter:** [@yourusername](https://twitter.com/yourusername)  
+💻 **GitHub:** [yourusername](https://github.com/yourusername)
+
+---
+
+## This Site
+
+This site is built with [Quarto](https://quarto.org) and hosted on
+[GitHub Pages](https://pages.github.com).
+
+The source code is available [here](https://github.com/yourusername/yourusername.github.io).
