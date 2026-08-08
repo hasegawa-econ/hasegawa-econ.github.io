@@ -22,4 +22,4 @@ website:
       - text: "ダッシュボード"
         href: dashboard/index.qmd
       - text: "国総"
-        href: kokusou/dashboard.html
+        href: kokusou/index.qmd
