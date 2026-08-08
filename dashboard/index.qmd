@@ -467,15 +467,19 @@ button.ai-toggle:hover, button.ai-toggle.open {
         if (r) { i.star = !i.star; render(); } else needHelper();
       }));
 
-    // 消す（非表示。Zotero本体には残る）
+    // 消す（Zotero本体からも完全削除）
     rootEl.querySelectorAll("button.del").forEach((el) =>
       el.addEventListener("click", async () => {
         const ck = el.dataset.ck;
         const i = items.find((x) => x.citekey === ck);
         if (!helperUp) { needHelper(); return; }
-        if (!confirm("「" + i.title.slice(0, 40) + "…」をダッシュボードから消しますか？\n（Zotero本体には残ります）")) return;
-        const r = await post("/hide?ck=" + encodeURIComponent(ck));
-        if (r) { items.splice(items.indexOf(i), 1); render(); } else needHelper();
+        if (!confirm("「" + i.title.slice(0, 40) + "…」を削除しますか？\nZotero本体からも完全に削除されます（取り消せません）。")) return;
+        const r = await post("/delete?ck=" + encodeURIComponent(ck));
+        if (r) {
+          items.splice(items.indexOf(i), 1);
+          render();
+          if (!r.deleted) alert(r.note || "Zotero本体からの削除はできませんでした（画面からは消しました）");
+        } else needHelper();
       }));
 
     // AI生成

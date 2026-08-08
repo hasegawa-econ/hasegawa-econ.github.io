@@ -7,3 +7,4 @@ project:
     - "!dashboard/"
   resources:
     - "!dashboard/"
+    - "!kokusou/"

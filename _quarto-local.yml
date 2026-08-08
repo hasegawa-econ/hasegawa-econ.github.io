@@ -10,6 +10,7 @@ project:
     - "dashboard/shelf.json"
     - "dashboard/ai_list.json"
     - "dashboard/ai/*.json"
+    - "kokusou/**"
 
 website:
   navbar:
@@ -20,3 +21,5 @@ website:
         href: blog/index.qmd
       - text: "ダッシュボード"
         href: dashboard/index.qmd
+      - text: "国総"
+        href: kokusou/dashboard.html

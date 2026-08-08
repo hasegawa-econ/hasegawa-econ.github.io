@@ -17,7 +17,10 @@
       "Bash(rm -f /Users/user/Desktop/研究ダッシュボード.command)",
       "Bash(osacompile -o /Users/user/Desktop/研究ダッシュボード.app -e 'do shell script \"/bin/zsh \" & quoted form of \"/Users/user/mysite/scripts/dashboard-launch.sh\" & \" > /dev/null 2>&1 &\"')",
       "Bash(chmod +x /Users/user/mysite/scripts/dashboard-launch.sh)",
-      "Bash(curl -s -X POST \"http://localhost:4322/shelf?ck=zzz_apitest&status=%E8%AA%AD%E4%B8%AD\")"
+      "Bash(curl -s -X POST \"http://localhost:4322/shelf?ck=zzz_apitest&status=%E8%AA%AD%E4%B8%AD\")",
+      "Bash(/usr/bin/python3 -c ' *)",
+      "Bash(curl -s http://localhost:4321/)",
+      "Bash(git commit -q -m 'Zotero本体からの完全削除（Web API）と国総ダッシュボードのローカル組込 *)"
     ]
   }
 }

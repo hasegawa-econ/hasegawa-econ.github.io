@@ -44,14 +44,14 @@ LOCK = threading.Lock()
 
 
 def ensure_api_key():
-    if os.environ.get("ANTHROPIC_API_KEY"):
-        return
+    """必要な環境変数が無ければ ~/.zshrc から拾う。"""
     zshrc = Path.home() / ".zshrc"
-    if zshrc.exists():
-        m = re.search(r'export\s+ANTHROPIC_API_KEY=["\']?([^"\'\s]+)',
-                      zshrc.read_text(encoding="utf-8", errors="ignore"))
-        if m:
-            os.environ["ANTHROPIC_API_KEY"] = m.group(1)
+    text = zshrc.read_text(encoding="utf-8", errors="ignore") if zshrc.exists() else ""
+    for name in ("ANTHROPIC_API_KEY", "ZOTERO_API_KEY"):
+        if not os.environ.get(name):
+            m = re.search(r'export\s+' + name + r'=["\']?([^"\'\s]+)', text)
+            if m:
+                os.environ[name] = m.group(1)
 
 
 def paper_of(ck):
@@ -86,6 +86,48 @@ def update_shelf(ck, **kw):
         entry.update(kw)
         save_shelf(shelf)
     return shelf[ck]
+
+
+# ---------- Zotero本体からの削除（Web API・要 ZOTERO_API_KEY）----------
+
+def zotero_uri_of(ck):
+    """Econ.json から citekey → zotero.org の uri を引く。"""
+    try:
+        data = json.loads(ECON.read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        return None
+    for it in data.get("items", []):
+        if it.get("citationKey") == ck:
+            return it.get("uri")
+    return None
+
+
+def zotero_delete(ck):
+    """Zotero Web API でアイテムを完全削除（ライブラリは同期済み前提）。"""
+    import urllib.request
+    key = os.environ.get("ZOTERO_API_KEY")
+    if not key:
+        return False, "ZOTERO_API_KEY が未設定（非表示のみ行いました）"
+    uri = zotero_uri_of(ck)
+    m = uri and re.match(r"https?://zotero\.org/users/(\d+)/items/(\w+)", uri)
+    if not m:
+        return False, "Zotero上のアイテムIDが特定できませんでした（非表示のみ）"
+    uid, item_key = m.group(1), m.group(2)
+    api = f"https://api.zotero.org/users/{uid}/items/{item_key}"
+    try:
+        req = urllib.request.Request(api, headers={"Zotero-API-Key": key})
+        with urllib.request.urlopen(req, timeout=30) as res:
+            version = res.headers.get("Last-Modified-Version") or \
+                json.loads(res.read()).get("version", "")
+        req = urllib.request.Request(api, method="DELETE", headers={
+            "Zotero-API-Key": key,
+            "If-Unmodified-Since-Version": str(version),
+        })
+        with urllib.request.urlopen(req, timeout=30):
+            pass
+        return True, "Zoteroから削除しました（次回同期でローカルにも反映）"
+    except Exception as e:  # noqa: BLE001
+        return False, f"Zotero API エラー: {e}（非表示のみ行いました）"
 
 
 # ---------- AI要約の生成 ----------
@@ -307,6 +349,10 @@ class Handler(BaseHTTPRequestHandler):
             self._send(update_shelf(ck, star=on))
         elif u.path == "/hide":
             self._send(update_shelf(ck, hidden=True))
+        elif u.path == "/delete":
+            update_shelf(ck, hidden=True)      # まず即座に画面から消す
+            deleted, note = zotero_delete(ck)
+            self._send({"hidden": True, "deleted": deleted, "note": note})
         else:
             self._send({"error": "not found"}, 404)
 
