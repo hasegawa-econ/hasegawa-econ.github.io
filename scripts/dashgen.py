@@ -142,6 +142,87 @@ def zotero_delete(ck):
         return False, f"Zotero API エラー: {e}（非表示のみ行いました）"
 
 
+# ---------- 裸PDFのメタデータをAIで推測 ----------
+
+BARE_META = BASE / "dashboard" / "bare_meta.json"
+
+
+def bare_pdf_path(key):
+    """Econ.json（同期コピー可）から、指定キーの添付PDFのローカルパスを返す。"""
+    try:
+        data = json.loads(econ_source().read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        return None
+    for it in data.get("items", []):
+        if it.get("itemType") == "attachment" and (it.get("uri") or "").endswith(key):
+            return it.get("path")
+    return None
+
+
+def load_bare_meta():
+    try:
+        return json.loads(BARE_META.read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        return {}
+
+
+def save_bare_meta(meta):
+    for dst in [BASE / "dashboard" / "bare_meta.json",
+                BASE / "docs" / "dashboard" / "bare_meta.json"]:
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        dst.write_text(json.dumps(meta, ensure_ascii=False, indent=1), encoding="utf-8")
+
+
+def enrich(key):
+    """裸PDFの先頭を読み、タイトル・著者・年を Claude に推測させて保存。"""
+    st = "gen:bare:" + key
+    try:
+        pdf = bare_pdf_path(key)
+        if not pdf or not Path(pdf).exists():
+            with LOCK:
+                STATE[st] = "error: PDFが見つかりません"
+            return
+        from pypdf import PdfReader
+        import anthropic
+        reader = PdfReader(pdf)
+        text = "\n".join((reader.pages[i].extract_text() or "")
+                         for i in range(min(2, len(reader.pages))))[:6000]
+        client = anthropic.Anthropic()
+        msg = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=400,
+            tools=[{
+                "name": "record_metadata",
+                "description": "論文の書誌情報",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "title": {"type": "string"},
+                        "authors": {"type": "string", "description": "著者名をカンマ区切りで"},
+                        "year": {"type": "string"},
+                    },
+                    "required": ["title", "authors", "year"],
+                },
+            }],
+            tool_choice={"type": "tool", "name": "record_metadata"},
+            messages=[{"role": "user", "content":
+                       "次の論文の1ページ目から、タイトル・著者・出版年を抽出して。\n\n" + text}],
+        )
+        data = next((b.input for b in msg.content if b.type == "tool_use"), None)
+        if not data:
+            with LOCK:
+                STATE[st] = "error: 抽出に失敗しました"
+            return
+        with LOCK:
+            meta = load_bare_meta()
+            meta[key] = data
+            save_bare_meta(meta)
+            STATE[st] = "done"
+    except Exception as e:  # noqa: BLE001
+        with LOCK:
+            STATE[st] = f"error: {e}"[:300]
+
+
 # ---------- AI要約の生成 ----------
 
 def sync_ai_outputs(ck):
@@ -319,6 +400,12 @@ class Handler(BaseHTTPRequestHandler):
         elif u.path == "/pubstatus":
             with LOCK:
                 self._send({"state": STATE.get("pub:" + ck, "unknown")})
+        elif u.path == "/enrichstatus":
+            key = (q.get("key") or [""])[0]
+            with LOCK:
+                state = STATE.get("gen:bare:" + key, "unknown")
+                meta = load_bare_meta().get(key) if state == "done" else None
+            self._send({"state": state, "meta": meta})
         elif u.path == "/drafts":
             cks = sorted(f.stem for f in DRAFTS.glob("*/*.md")) if DRAFTS.exists() else []
             self._send({"drafts": cks})
@@ -345,6 +432,14 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):  # noqa: N802
         u = urlparse(self.path)
         q = parse_qs(u.query)
+        # /enrich は key を使う（citekey 不要）ので先に処理
+        if u.path == "/enrich":
+            key = (q.get("key") or [""])[0]
+            if not key:
+                self._send({"error": "keyがありません"}, 400)
+                return
+            self._start_thread("gen:bare:" + key, enrich, key)
+            return
         ck = (q.get("ck") or [""])[0]
         if not ck:
             self._send({"error": "citekeyがありません"}, 400)

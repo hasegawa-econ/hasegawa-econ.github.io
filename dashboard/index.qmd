@@ -172,6 +172,44 @@ button.ai-toggle:hover, button.ai-toggle.open {
   color: var(--ink-soft);
   font-size: 0.9rem;
 }
+.dash-bare {
+  margin-top: 2.5rem;
+  border: 1px dashed var(--rule);
+  padding: 1rem 1.2rem;
+}
+.dash-bare-head {
+  font-family: var(--font-label);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--vermilion);
+  margin-bottom: 0.6rem;
+}
+.dash-bare-item {
+  display: flex;
+  align-items: baseline;
+  gap: 0.8rem;
+  padding: 0.55rem 0;
+  border-top: 1px solid var(--rule);
+  font-size: 0.9rem;
+}
+.dash-bare-title { color: var(--ink); }
+.dash-bare-authors {
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+  margin-left: 0.4rem;
+}
+button.dash-bare-guess {
+  font-family: var(--font-label);
+  font-size: 0.72rem;
+  color: var(--vermilion);
+  background: none;
+  border: none;
+  cursor: pointer;
+  margin-left: 0.9rem;
+  padding: 0;
+}
+button.dash-bare-guess:hover { text-decoration: underline; }
 </style>
 
 <div id="dash-root"></div>
@@ -243,8 +281,29 @@ button.ai-toggle:hover, button.ai-toggle.open {
   const LABEL = { "to-read": "未読", reading: "読書中", done: "読了" };
   const NEXT = { "to-read": "reading", reading: "done", done: "to-read" };
   const SKIP_TYPES = new Set(["attachment", "note", "annotation"]);
+  const rawItems = (Array.isArray(data) ? data : data.items || []);
 
-  const items = (Array.isArray(data) ? data : data.items || [])
+  // 裸のPDF（親アイテムのない添付）＝ワーキングペーパーを直接入れたとき等。
+  // 黙って捨てず「要整備」として表示し、Zoteroで親アイテムを作れるようにする。
+  const bareMeta = (await get("bare_meta.json")) || {};
+  const bareItems = rawItems
+    .filter((it) => it.itemType === "attachment" && (it.path || "").toLowerCase().endsWith(".pdf"))
+    .map((it) => {
+      const key = (it.uri || "").split("/").pop();
+      const base = (it.path || it.url || it.title || "")
+        .split("/").pop().replace(/\.pdf$/i, "").replace(/[_\-]+/g, " ").trim();
+      const guess = bareMeta[key] || null;
+      return {
+        key,
+        title: (guess && guess.title) || base || "(無題PDF)",
+        authors: guess ? (guess.authors || "") : "",
+        year: guess ? (guess.year || "") : "",
+        url: it.url || "",
+        select: it.select || (it.uri ? it.uri.replace("http://zotero.org", "zotero://select") : ""),
+      };
+    });
+
+  const items = rawItems
     .filter((it) => !SKIP_TYPES.has(it.itemType))
     .map((it) => {
       const tags = (it.tags || []).map((t) => (typeof t === "string" ? t : t.tag));
@@ -440,16 +499,67 @@ button.ai-toggle:hover, button.ai-toggle.open {
         }).join("")
       : '<div class="dash-empty">該当する論文はありません。</div>';
 
+    // 要整備（裸のPDF）セクション — フィルタ非依存で末尾に常時表示
+    let bareSection = "";
+    if (bareItems.length) {
+      const rows = bareItems.map((b) => {
+        const gs = genState["bare:" + b.key];
+        const pdf = b.url ? '<a href="' + esc(b.url) + '" target="_blank">PDF</a>' : "";
+        const zot = b.select ? '<a href="' + esc(b.select) + '">Zoteroで整備</a>' : "";
+        const guess = gs === "running"
+          ? '<span class="dash-bare-guess">推測中…</span>'
+          : '<button class="dash-bare-guess" data-key="' + esc(b.key) + '">AIで推測</button>';
+        const authors = (b.authors || b.year)
+          ? '<span class="dash-bare-authors">' + esc([b.authors, b.year].filter(Boolean).join(" ・ ")) + "</span>"
+          : "";
+        return (
+          '<div class="dash-bare-item">' +
+          '<span class="dash-bare-title">' + esc(b.title) + "</span>" + authors +
+          '<span class="dash-links">' + guess + pdf + zot + "</span></div>"
+        );
+      }).join("");
+      bareSection =
+        '<div class="dash-bare">' +
+        '<div class="dash-bare-head">⚠ メタデータ未整備のPDF ' + bareItems.length +
+        '件 — Zoteroで「親アイテムを作成」すると一覧に入ります</div>' + rows + "</div>";
+    }
+
     rootEl.innerHTML =
       '<div class="dash-stats">' + stats + "</div>" +
       '<div class="dash-tagrow">' + chips + "</div>" +
       '<input class="dash-search" type="search" placeholder="タイトル・著者・掲載誌で検索" value="' +
-      esc(query) + '">' + list;
+      esc(query) + '">' + list + bareSection;
 
     rootEl.querySelectorAll(".dash-stat").forEach((el) =>
       el.addEventListener("click", () => { activeStatus = el.dataset.status; render(); }));
     rootEl.querySelectorAll(".dash-tagchip").forEach((el) =>
       el.addEventListener("click", () => { activeTag = el.dataset.tag || null; render(); }));
+
+    // 裸PDFの中身からタイトル・著者・年をAI推測
+    rootEl.querySelectorAll("button.dash-bare-guess").forEach((el) =>
+      el.addEventListener("click", async () => {
+        const key = el.dataset.key;
+        if (!helperUp) { needHelper(); return; }
+        const r = await post("/enrich?key=" + encodeURIComponent(key));
+        if (!r) { needHelper(); return; }
+        genState["bare:" + key] = "running";
+        render();
+        const timer = setInterval(async () => {
+          const s = await get("/enrichstatus?key=" + encodeURIComponent(key), GEN_API);
+          if (!s) return;
+          if (s.state === "done" && s.meta) {
+            clearInterval(timer);
+            delete genState["bare:" + key];
+            const b = bareItems.find((x) => x.key === key);
+            if (b) { b.title = s.meta.title || b.title; b.authors = s.meta.authors || ""; b.year = s.meta.year || ""; }
+            render();
+          } else if (s.state && s.state.startsWith("error")) {
+            clearInterval(timer);
+            genState["bare:" + key] = s.state;
+            render();
+          }
+        }, 4000);
+      }));
 
     // ステータス切り替え（未読→読書中→読了）
     rootEl.querySelectorAll("button.dash-status").forEach((el) =>

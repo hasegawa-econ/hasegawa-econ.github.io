@@ -15,6 +15,7 @@ __pycache__/
 /dashboard/shelf.json
 /dashboard/ai_list.json
 /dashboard/ai/
+/dashboard/bare_meta.json
 
 # ===== 移行検討中の持ち込みフォルダ（コミット禁止）=====
 /Zotero/

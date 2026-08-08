@@ -10,6 +10,7 @@ project:
     - "dashboard/shelf.json"
     - "dashboard/ai_list.json"
     - "dashboard/ai/*.json"
+    - "dashboard/bare_meta.json"
     - "kokusou/**"
 
 website:
