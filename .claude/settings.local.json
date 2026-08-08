@@ -21,7 +21,17 @@
       "Bash(/usr/bin/python3 -c ' *)",
       "Bash(curl -s http://localhost:4321/)",
       "Bash(git commit -q -m 'Zotero本体からの完全削除（Web API）と国総ダッシュボードのローカル組込 *)",
-      "Bash(git commit -q -m '国総作戦盤をサイト内ページ化（iframe埋め込み・公開renderからも除外） *)"
+      "Bash(git commit -q -m '国総作戦盤をサイト内ページ化（iframe埋め込み・公開renderからも除外） *)",
+      "Bash(xargs kill)",
+      "Bash(nohup /usr/bin/python3 scripts/dashgen.py)",
+      "Bash(curl -s -o /tmp/pdftest.pdf -w \"HTTP %{http_code} / %{size_download} bytes / %{content_type}\\\\n\" \"http://localhost:4322/pdf?ck=krishna_2026_pareto\")",
+      "Read(//tmp/**)",
+      "Bash(git commit -q -m 'PDF配信: Econ.jsonが読めない環境では同期コピーへフォールバック *)",
+      "WebFetch(domain:pdf.net)",
+      "WebSearch",
+      "WebFetch(domain:www.reed.edu)",
+      "WebFetch(domain:www.icpsr.umich.edu)",
+      "WebFetch(domain:www.econometrics.blog)"
     ]
   }
 }
