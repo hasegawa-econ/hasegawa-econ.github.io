@@ -6,6 +6,8 @@ project:
     - "**/*.qmd"
     - "!dashboard/"
     - "!kokusou/"
+    - "!reading/"
   resources:
     - "!dashboard/"
     - "!kokusou/"
+    - "!reading/"

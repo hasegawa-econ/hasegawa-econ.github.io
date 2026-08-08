@@ -23,3 +23,5 @@ website:
         href: dashboard/index.qmd
       - text: "国総"
         href: kokusou/index.qmd
+      - text: "読書ガイド"
+        href: reading/index.qmd
