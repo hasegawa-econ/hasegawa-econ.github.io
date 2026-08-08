@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh run *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" https://hasegawa-econ.github.io)",
+      "Bash(curl -s https://hasegawa-econ.github.io)",
+      "Bash(quarto render *)"
+    ]
+  }
+}

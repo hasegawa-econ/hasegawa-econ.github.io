@@ -1,76 +1,530 @@
-/* ===== General ===== */
-body {
-  font-family: 'Georgia', serif;
-  line-height: 1.8;
+/* ==============================================================
+   シロのブログ — 雑誌風エディトリアル
+   明朝の見出し × ゴシックの本文 / 墨 + 朱の二色 / 細罫と余白
+   ============================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@400;600;700;800&family=Noto+Sans+JP:wght@400;500;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+/* ===== Palette ===== */
+:root {
+  --paper:        #FBFAF7;   /* わずかに温かい紙白 */
+  --ink:          #1C1B18;   /* 墨 */
+  --ink-soft:     #55524B;   /* 本文補助 */
+  --ink-faint:    #8B877D;   /* 日付・ラベル */
+  --vermilion:    #B33A24;   /* 朱 — リンク・アクセント */
+  --rule:         #DDD9CF;   /* 細罫 */
+  --rule-strong:  #1C1B18;   /* 太罫（墨色） */
+  --code-bg:      #F3F1EB;
+  --code-border:  #E3E0D7;
+
+  --font-display: 'Shippori Mincho B1', 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+  --font-body:    'Noto Sans JP', 'Hiragino Kaku Gothic ProN', sans-serif;
+  --font-label:   'Inter', 'Noto Sans JP', sans-serif;
+  --font-mono:    'IBM Plex Mono', 'SF Mono', Consolas, monospace;
 }
 
+.quarto-dark {
+  --paper:        #191816;
+  --ink:          #E9E6DF;
+  --ink-soft:     #B5B1A6;
+  --ink-faint:    #7E7A70;
+  --vermilion:    #E0714F;
+  --rule:         #35332E;
+  --rule-strong:  #E9E6DF;
+  --code-bg:      #211F1C;
+  --code-border:  #35332E;
+}
+
+/* ===== Base ===== */
+body {
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.95;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  background-color: var(--paper);
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "palt";
+}
+
+main.content,
+.page-columns .column-body {
+  max-width: 680px;
+}
+
+p { margin-bottom: 1.4rem; }
+
+strong, b { font-weight: 700; color: var(--ink); }
+
+/* ===== Headings ===== */
 h1, h2, h3, h4 {
-  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: 0.01em;
+}
+
+h2 {
+  font-size: 1.5rem;
+  line-height: 1.5;
+  margin-top: 3.5rem;
+  margin-bottom: 1.2rem;
+  padding-top: 1.4rem;
+  border-top: 1px solid var(--rule);
+  border-bottom: none;
+}
+
+/* 最初のセクションはメタ情報の罫線と重なるので罫線なし */
+main > section.level2:first-of-type > h2 {
+  border-top: none;
+  padding-top: 0;
+  margin-top: 2.5rem;
+}
+
+h3 {
+  font-size: 1.18rem;
+  margin-top: 2.4rem;
+  margin-bottom: 0.9rem;
+}
+
+h4 {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 1rem;
+  margin-top: 2rem;
+  margin-bottom: 0.6rem;
+}
+
+/* ===== Title block（記事・ページ冒頭）===== */
+.quarto-title-block .quarto-title h1.title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(1.65rem, 4.5vw + 0.8rem, 2.5rem);
+  line-height: 1.45;
+  letter-spacing: 0.015em;
+  color: var(--ink);
+  border: none;
+  padding: 0;
+  margin: 1.2rem 0 0.8rem;
+}
+
+.quarto-title-block .subtitle {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 0.98rem;
+  color: var(--ink-soft);
+  letter-spacing: 0.04em;
+  margin-top: 0.6rem;
+}
+
+/* メタ情報が空のページ（トップ等）では罫線ごと消す */
+.quarto-title-meta:not(:has(*)) { display: none !important; }
+
+/* 記事メタ（著者・日付）— 上下の細罫で挟む */
+.quarto-title-meta {
+  font-family: var(--font-label);
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+  border-top: 1px solid var(--rule-strong);
+  border-bottom: 1px solid var(--rule);
+  padding: 0.85rem 0;
+  margin: 2rem 0 2.5rem;
+}
+
+.quarto-title-meta-heading {
   font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.68rem;
+  color: var(--ink-faint);
+}
+
+/* 記事タイトル下のカテゴリ */
+.quarto-title .quarto-categories .quarto-category {
+  font-family: var(--font-label);
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  border: 1px solid var(--rule);
+  border-radius: 0;
+  padding: 0.28em 0.8em;
+  opacity: 1;
+}
+
+/* ===== Links ===== */
+a {
+  color: var(--vermilion);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.22em;
+  text-decoration-color: color-mix(in srgb, var(--vermilion) 45%, transparent);
+  transition: text-decoration-color 0.2s ease;
+}
+
+a:hover {
+  color: var(--vermilion);
+  text-decoration-color: var(--vermilion);
 }
 
 /* ===== Navbar ===== */
 .navbar {
-  border-bottom: 1px solid #e5e5e5;
+  background-color: var(--paper) !important;
+  border-bottom: 1px solid var(--rule-strong);
+  padding-top: 1.3rem;
+  padding-bottom: 1.1rem;
+  box-shadow: none;
 }
 
 .navbar-brand {
-  font-weight: 700;
-  font-size: 1.1rem;
-  letter-spacing: 0.02em;
+  font-family: var(--font-display) !important;
+  font-weight: 800 !important;
+  font-size: 1.35rem !important;
+  letter-spacing: 0.05em;
+  color: var(--ink) !important;
 }
 
-/* ===== About / Profile page ===== */
-.quarto-about-trestles .about-entity {
-  border-right: none;
+.navbar-brand:hover { color: var(--ink) !important; opacity: 0.7; }
+
+.navbar .nav-link {
+  font-family: var(--font-label);
+  font-weight: 500;
+  font-size: 0.8rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-soft) !important;
+  padding: 0.5rem 1rem !important;
+  text-decoration: none;
+  transition: color 0.2s ease;
 }
 
-.quarto-about-trestles .about-links {
+.navbar .nav-link:hover { color: var(--vermilion) !important; }
+
+.navbar .nav-link.active {
+  color: var(--ink) !important;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.5em;
+  text-decoration-color: var(--vermilion);
+}
+
+/* ===== Lists ===== */
+ul, ol { margin-bottom: 1.4rem; padding-left: 1.4rem; }
+li { margin-bottom: 0.45rem; }
+li::marker { color: var(--ink-faint); }
+
+/* ===== Blockquote — 引用は静かに ===== */
+blockquote {
+  border-left: 2px solid var(--rule-strong);
+  margin: 2rem 0;
+  padding: 0.2rem 0 0.2rem 1.4rem;
+  color: var(--ink-soft);
+  font-family: var(--font-display);
+  font-size: 1.02rem;
+  background: none;
+  border-radius: 0;
+}
+
+blockquote p:last-child { margin-bottom: 0; }
+
+/* ===== Horizontal rule ===== */
+hr {
+  border: none;
+  height: 1px;
+  background: var(--rule);
+  margin: 3rem auto;
+  width: 100%;
+  opacity: 1;
+}
+
+/* ===== Code ===== */
+code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background-color: var(--code-bg);
+  color: var(--ink);
+  padding: 0.15em 0.4em;
+  border-radius: 3px;
+  font-weight: 400;
+}
+
+/* コードブロック — スクロールするのは外側の div.sourceCode */
+div.sourceCode {
+  background-color: var(--code-bg) !important;
+  border: 1px solid var(--code-border);
+  border-radius: 4px;
+  margin: 1.8rem 0;
+}
+
+div.sourceCode pre {
+  background: transparent !important;
+  border: none;
+  margin: 0;
+}
+
+pre {
+  background-color: var(--code-bg) !important;
+  border: 1px solid var(--code-border);
+  border-radius: 4px;
+  padding: 1.1rem 1.3rem !important;
+  font-size: 0.85rem;
+  line-height: 1.7;
+  margin: 1.8rem 0;
+  overflow-x: auto;
+}
+
+pre::before { display: none; }
+
+/* 横スクロールバーを地色に馴染ませる */
+div.sourceCode, pre {
+  scrollbar-width: thin;
+  scrollbar-color: var(--rule) transparent;
+}
+
+div.sourceCode::-webkit-scrollbar, pre::-webkit-scrollbar {
+  height: 8px;
+  background: transparent;
+}
+div.sourceCode::-webkit-scrollbar-track, pre::-webkit-scrollbar-track {
+  background: transparent;
+}
+div.sourceCode::-webkit-scrollbar-thumb, pre::-webkit-scrollbar-thumb {
+  background: var(--rule);
+  border-radius: 4px;
+}
+
+pre code {
+  background: transparent;
+  padding: 0;
+  font-size: 0.85rem;
+}
+
+/* ===== Blog listing — 目次のような一覧 ===== */
+.quarto-listing { margin-top: 1.5rem; }
+
+.list .quarto-post {
   display: flex;
-  flex-wrap: wrap;
+  gap: 2rem;
+  border-bottom: 1px solid var(--rule);
+  padding: 2.2rem 0;
+  margin-bottom: 0;
+  background: none;
+  border-radius: 0;
+  transition: none;
+}
+
+.list .quarto-post:first-child { border-top: 1px solid var(--rule-strong); }
+
+.list .quarto-post:hover { background: none; padding-left: 0; }
+
+/* 日付は雑誌の目次らしく先頭（広い画面では左カラム）に */
+.list .quarto-post .metadata {
+  order: -1;
+  font-family: var(--font-label);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  flex-basis: 8.5rem;
+  flex-shrink: 0;
+  padding-top: 0.45rem;
+}
+
+@media (max-width: 767.98px) {
+  .list .quarto-post {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .list .quarto-post .metadata {
+    flex-basis: auto;
+    padding-top: 0;
+    display: flex;
+    gap: 1.2rem;
+  }
+
+  .list .quarto-post .metadata .no-external {
+    display: flex;
+    gap: 1.2rem;
+  }
+}
+
+.list .quarto-post .listing-title {
+  font-family: var(--font-display) !important;
+  font-size: 1.35rem !important;
+  font-weight: 700 !important;
+  line-height: 1.55;
+  letter-spacing: 0.01em;
+  margin-bottom: 0.5rem;
+}
+
+.list .quarto-post .listing-title a {
+  color: var(--ink);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.list .quarto-post .listing-title a:hover { color: var(--vermilion); }
+
+.list .quarto-post .listing-date,
+.list .quarto-post .listing-reading-time {
+  font-family: var(--font-label);
+  color: var(--ink-faint);
+}
+
+.list .quarto-post .listing-description {
+  color: var(--ink-soft);
+  font-size: 0.92rem;
+  line-height: 1.85;
+  margin-top: 0.3rem;
+}
+
+.list .quarto-post .listing-description a { text-decoration: none; color: var(--ink-soft); }
+
+/* 一覧のカテゴリ — 枠線のみの小さなタグ */
+.list .quarto-post .listing-categories {
+  margin-top: 0.9rem;
   gap: 0.5rem;
-  margin-top: 1rem;
 }
 
-.about-link {
-  border: 1px solid #dee2e6 !important;
-  border-radius: 6px !important;
-  padding: 0.4rem 0.9rem !important;
-  font-size: 0.9rem !important;
-  transition: all 0.2s ease;
+.listing-category,
+.list .quarto-post .listing-categories .listing-category {
+  font-family: var(--font-label) !important;
+  font-size: 0.68rem !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-faint) !important;
+  background: none !important;
+  border: 1px solid var(--rule) !important;
+  border-radius: 0 !important;
+  padding: 0.28em 0.8em !important;
+  margin: 0 !important;
+  transition: border-color 0.2s ease, color 0.2s ease;
 }
 
-.about-link:hover {
-  background-color: #0d6efd !important;
-  color: white !important;
-  border-color: #0d6efd !important;
+.listing-category:hover {
+  transform: none;
+  color: var(--vermilion) !important;
+  border-color: var(--vermilion) !important;
 }
 
-/* ===== Blog listing ===== */
-.quarto-listing-default .listing-date {
-  color: #6c757d;
-  font-size: 0.88rem;
+/* ===== Categories sidebar ===== */
+.quarto-listing-category-title {
+  font-family: var(--font-label) !important;
+  font-size: 0.7rem !important;
+  font-weight: 600 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--ink-faint) !important;
 }
 
-.quarto-listing-default .listing-title {
-  font-size: 1.1rem;
+.quarto-listing-category {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+}
+
+.quarto-listing-category .category {
+  color: var(--ink-soft);
+  cursor: pointer;
+  padding: 0.15rem 0;
+  transition: color 0.2s ease;
+}
+
+.quarto-listing-category .category:hover { color: var(--vermilion); }
+
+.quarto-listing-category .category.active {
+  color: var(--vermilion);
   font-weight: 600;
 }
 
-/* ===== Code blocks ===== */
-pre {
-  border-radius: 8px;
-  border: 1px solid #e5e5e5;
+/* ===== TOC ===== */
+#TOC, .sidebar-toc, nav#TOC {
+  font-family: var(--font-body);
+  font-size: 0.82rem;
 }
+
+#toc-title, .sidebar-title, #TOC > .h2 {
+  font-family: var(--font-label) !important;
+  font-size: 0.68rem !important;
+  font-weight: 600 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--ink-faint) !important;
+  border: none;
+  padding: 0 !important;
+  margin-top: 0;
+}
+
+#TOC a, .sidebar-toc a, nav#TOC a {
+  color: var(--ink-soft);
+  text-decoration: none;
+  border-left: 1px solid transparent;
+  padding-left: 0.7rem;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+#TOC a:hover, .sidebar-toc a:hover, nav#TOC a:hover {
+  color: var(--vermilion);
+}
+
+#TOC .active, .sidebar-toc .active, nav#TOC .active {
+  color: var(--ink) !important;
+  font-weight: 600;
+  border-left-color: var(--vermilion);
+}
+
+/* ===== Tables ===== */
+table {
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  border-collapse: collapse;
+  margin: 1.8rem 0;
+  width: 100%;
+}
+
+table th {
+  font-family: var(--font-label);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-faint);
+  background: none;
+  text-align: left;
+  padding: 0.6rem 1rem;
+  border-top: 1px solid var(--rule-strong);
+  border-bottom: 1px solid var(--rule-strong);
+}
+
+table td {
+  padding: 0.65rem 1rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+table tr:hover td { background: none; }
+
+/* ===== Images ===== */
+img { border-radius: 0; max-width: 100%; }
 
 /* ===== Footer ===== */
 .nav-footer {
-  border-top: 1px solid #e5e5e5;
-  font-size: 0.88rem;
-  color: #6c757d;
+  border-top: 1px solid var(--rule-strong);
+  background-color: var(--paper);
+  font-family: var(--font-label);
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  color: var(--ink-faint);
+  padding: 1.8rem 0;
+  margin-top: 5rem;
 }
 
-/* ===== Reading width ===== */
-.page-columns .column-body {
-  max-width: 740px;
+.nav-footer a { color: var(--ink-faint); text-decoration: none; }
+.nav-footer a:hover { color: var(--vermilion); }
+
+/* ===== Selection ===== */
+::selection {
+  background: color-mix(in srgb, var(--vermilion) 18%, transparent);
+  color: var(--ink);
 }

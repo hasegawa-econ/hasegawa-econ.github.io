@@ -1,0 +1,227 @@
+---
+title: "ダッシュボード"
+subtitle: "Zotero の読書リスト（ローカル専用・公開されません）"
+toc: false
+---
+
+```{=html}
+<style>
+.dash-stats {
+  display: flex;
+  gap: 0;
+  border-top: 1px solid var(--rule-strong);
+  border-bottom: 1px solid var(--rule);
+  margin: 1rem 0 2rem;
+}
+.dash-stat {
+  flex: 1;
+  padding: 1rem 0.5rem;
+  text-align: center;
+  cursor: pointer;
+  border-left: 1px solid var(--rule);
+  transition: background 0.2s ease;
+}
+.dash-stat:first-child { border-left: none; }
+.dash-stat:hover { background: var(--code-bg); }
+.dash-stat.active .dash-stat-num { color: var(--vermilion); }
+.dash-stat-num {
+  font-family: var(--font-display);
+  font-size: 1.9rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.dash-stat-label {
+  font-family: var(--font-label);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.dash-search {
+  width: 100%;
+  font-family: var(--font-body);
+  font-size: 0.92rem;
+  color: var(--ink);
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--rule);
+  padding: 0.5rem 0;
+  margin-bottom: 1.5rem;
+  outline: none;
+}
+.dash-search:focus { border-bottom-color: var(--vermilion); }
+.dash-item {
+  border-bottom: 1px solid var(--rule);
+  padding: 1.3rem 0;
+}
+.dash-item-title {
+  font-family: var(--font-display);
+  font-size: 1.08rem;
+  font-weight: 700;
+  line-height: 1.6;
+  margin-bottom: 0.25rem;
+}
+.dash-item-title a { color: var(--ink); text-decoration: none; }
+.dash-item-title a:hover { color: var(--vermilion); }
+.dash-item-meta {
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+}
+.dash-item-tags {
+  margin-top: 0.5rem;
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.dash-tag {
+  font-family: var(--font-label);
+  font-size: 0.64rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  border: 1px solid var(--rule);
+  padding: 0.2em 0.7em;
+}
+.dash-tag.status-to-read  { color: var(--vermilion); border-color: var(--vermilion); }
+.dash-tag.status-reading  { color: var(--ink); border-color: var(--ink-soft); }
+.dash-links {
+  font-family: var(--font-label);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  margin-left: auto;
+}
+.dash-links a { color: var(--ink-faint); text-decoration: none; margin-left: 0.9rem; }
+.dash-links a:hover { color: var(--vermilion); }
+.dash-empty {
+  border: 1px dashed var(--rule);
+  padding: 1.6rem;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+</style>
+
+<div id="dash-root"></div>
+
+<script>
+(async function () {
+  const rootEl = document.getElementById("dash-root");
+  let data = null;
+  try {
+    const res = await fetch("library.json", { cache: "no-store" });
+    if (res.ok) data = await res.json();
+  } catch (e) {}
+
+  if (!data) {
+    rootEl.innerHTML =
+      '<div class="dash-empty">まだデータがありません。Zotero の Better BibTeX で ' +
+      '<code>dashboard/library.json</code> への自動エクスポート' +
+      '（形式: BetterBibTeX JSON）を設定してください。</div>';
+    return;
+  }
+
+  // BetterBibTeX JSON ({items: [...]}) と CSL JSON ([...]) の両対応
+  const items = (Array.isArray(data) ? data : data.items || []).map((it) => {
+    const tags = (it.tags || []).map((t) => (typeof t === "string" ? t : t.tag));
+    const creators = it.creators
+      ? it.creators.map((c) => c.lastName || c.name).filter(Boolean)
+      : (it.author || []).map((a) => a.family || a.literal).filter(Boolean);
+    const year =
+      (it.date || "").match(/\d{4}/)?.[0] ||
+      it.issued?.["date-parts"]?.[0]?.[0] || "";
+    const status = ["to-read", "reading", "done"].find((s) => tags.includes(s)) || "その他";
+    return {
+      title: it.title || "(no title)",
+      authors: creators.join(", "),
+      year: String(year),
+      venue: it.publicationTitle || it["container-title"] || "",
+      tags,
+      status,
+      added: it.dateAdded || it.accessed || "",
+      citekey: it.citationKey || it.id || "",
+      url: it.url || it.URL || (it.DOI ? "https://doi.org/" + it.DOI : ""),
+    };
+  });
+
+  items.sort((a, b) => (b.added || "").localeCompare(a.added || ""));
+
+  const STATUSES = [
+    ["to-read", "未読"],
+    ["reading", "読書中"],
+    ["done", "読了"],
+    ["all", "すべて"],
+  ];
+  let activeStatus = "to-read";
+  let query = "";
+
+  function count(s) {
+    return s === "all" ? items.length : items.filter((i) => i.status === s).length;
+  }
+
+  function esc(t) {
+    return t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  function render() {
+    const visible = items.filter((i) => {
+      const okStatus = activeStatus === "all" || i.status === activeStatus;
+      const q = query.toLowerCase();
+      const okQuery =
+        !q || (i.title + " " + i.authors + " " + i.venue).toLowerCase().includes(q);
+      return okStatus && okQuery;
+    });
+
+    const stats = STATUSES.map(
+      ([key, label]) =>
+        '<div class="dash-stat' + (key === activeStatus ? " active" : "") +
+        '" data-status="' + key + '">' +
+        '<div class="dash-stat-num">' + count(key) + "</div>" +
+        '<div class="dash-stat-label">' + label + "</div></div>"
+    ).join("");
+
+    const list = visible.length
+      ? visible.map((i) => {
+          const meta = [i.authors, i.year, i.venue].filter(Boolean).join(" ・ ");
+          const zoteroLink = i.citekey
+            ? '<a href="zotero://select/items/@' + esc(i.citekey) + '">Zotero</a>'
+            : "";
+          const urlLink = i.url ? '<a href="' + esc(i.url) + '" target="_blank">原文</a>' : "";
+          const tags = i.tags
+            .map((t) => '<span class="dash-tag status-' + esc(t) + '">' + esc(t) + "</span>")
+            .join("");
+          return (
+            '<div class="dash-item">' +
+            '<div class="dash-item-title">' +
+            (i.url ? '<a href="' + esc(i.url) + '" target="_blank">' + esc(i.title) + "</a>" : esc(i.title)) +
+            "</div>" +
+            '<div class="dash-item-meta">' + esc(meta) + "</div>" +
+            '<div class="dash-item-tags">' + tags +
+            '<span class="dash-links">' + zoteroLink + urlLink + "</span></div></div>"
+          );
+        }).join("")
+      : '<div class="dash-empty">該当する論文はありません。</div>';
+
+    rootEl.innerHTML =
+      '<div class="dash-stats">' + stats + "</div>" +
+      '<input class="dash-search" type="search" placeholder="タイトル・著者・掲載誌で検索" value="' +
+      esc(query) + '">' + list;
+
+    rootEl.querySelectorAll(".dash-stat").forEach((el) =>
+      el.addEventListener("click", () => {
+        activeStatus = el.dataset.status;
+        render();
+      })
+    );
+    const search = rootEl.querySelector(".dash-search");
+    search.addEventListener("input", (e) => {
+      query = e.target.value;
+      render();
+    });
+  }
+
+  render();
+})();
+</script>
+```

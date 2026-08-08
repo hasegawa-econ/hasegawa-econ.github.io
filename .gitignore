@@ -6,3 +6,9 @@
 __pycache__/
 
 **/*.quarto_ipynb
+
+# ===== 非公開の研究データ（このリポジトリは公開されているため）=====
+# Obsidian vault（文献メモ・研究アイデア）
+/notes/
+# Zotero からの自動エクスポート（読書リスト）
+/dashboard/library.json

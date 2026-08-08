@@ -1,0 +1,9 @@
+# 公開プロファイル（デフォルト）: ダッシュボードを一切含めない
+# quarto render / quarto publish gh-pages はこちらが使われる
+
+project:
+  render:
+    - "**/*.qmd"
+    - "!dashboard/"
+  resources:
+    - "!dashboard/"

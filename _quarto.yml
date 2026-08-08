@@ -2,6 +2,10 @@ project:
   type: website
   output-dir: docs
 
+# 通常は public（ダッシュボード除外）。ローカル閲覧は --profile local
+profile:
+  default: public
+
 website:
   title: "シロのブログ"
   description: "データサイエンス・統計・経済学の学習ログと読書メモ"
@@ -26,6 +30,9 @@ format:
     css: styles.css
     toc: true
     toc-depth: 3
-    code-fold: true
-    code-tools: true
+    toc-location: right
+    code-fold: false
+    code-tools: false
     highlight-style: github
+    fontsize: 16px
+    linestretch: 1.95

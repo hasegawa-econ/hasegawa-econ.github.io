@@ -1,0 +1,19 @@
+# ローカル専用プロファイル: quarto preview --profile local
+# ダッシュボードを含めてレンダリングし、ナビにも表示する
+# （公開デプロイは public プロファイルが使われ、このファイルは無関係）
+
+project:
+  render:
+    - "**/*.qmd"
+  resources:
+    - "dashboard/library.json"
+
+website:
+  navbar:
+    left:
+      - text: "ホーム"
+        href: index.qmd
+      - text: "ブログ"
+        href: blog/index.qmd
+      - text: "ダッシュボード"
+        href: dashboard/index.qmd

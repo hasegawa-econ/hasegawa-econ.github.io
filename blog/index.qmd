@@ -1,6 +1,6 @@
 ---
-title: "Blog"
-subtitle: "Technical posts, paper reviews, and essays"
+title: "ブログ"
+subtitle: "学習ログ・読書メモ・日々考えたこと"
 listing:
   contents: posts
   sort: "date desc"
