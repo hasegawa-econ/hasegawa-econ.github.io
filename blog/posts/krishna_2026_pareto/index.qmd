@@ -1,0 +1,22 @@
+---
+title: "Krishna et al. (2026)「Pareto Improvements in the Contest for College Admissions」を読んだ"
+description: "大学入試コンテストのパレート改善についての読書メモ"
+date: "2026-08-08"
+categories: [理論, 読書メモ]
+---
+
+## 一言でいうと
+
+面白い。
+
+## 面白かったポイント
+
+面白い。
+
+## 自分の考え
+
+面白い。
+
+---
+
+**論文**：Krishna, Lychagin, Olszewski, Siegel & Tergiman (2026). "Pareto Improvements in the Contest for College Admissions." *The Review of Economic Studies*. [doi:10.1093/restud/rdaf033](https://doi.org/10.1093/restud/rdaf033)

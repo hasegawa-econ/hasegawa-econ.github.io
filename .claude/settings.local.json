@@ -11,7 +11,13 @@
       "Bash(ls -lat ~/Desktop | head -15; echo \"=== Downloads ===\"; ls -lat ~/Downloads | head -15)",
       "Bash(head -30 tetete/README.md; echo \"=== add_notes.js 冒頭 ===\"; head -15 Zotero/add_notes.js; echo \"=== deploy.sh ===\"; head -15 Zotero/deploy.sh; echo \"=== 本物のZoteroデータの場所確認 ===\"; ls ~/Zotero 2>/dev/null | head -3; ls \"/Users/user/Documents/Zotero Paper/\" 2>/dev/null | head -5)",
       "Bash(/usr/bin/python3 -)",
-      "Bash(curl -s http://localhost:4321/dashboard/)"
+      "Bash(curl -s http://localhost:4321/dashboard/)",
+      "Bash(git commit -q -m 'ダッシュボードに「AI生成」ボタン（ローカルヘルパー経由でextract.py実行） *)",
+      "Bash(chmod +x scripts/dashboard-launch.sh)",
+      "Bash(rm -f /Users/user/Desktop/研究ダッシュボード.command)",
+      "Bash(osacompile -o /Users/user/Desktop/研究ダッシュボード.app -e 'do shell script \"/bin/zsh \" & quoted form of \"/Users/user/mysite/scripts/dashboard-launch.sh\" & \" > /dev/null 2>&1 &\"')",
+      "Bash(chmod +x /Users/user/mysite/scripts/dashboard-launch.sh)",
+      "Bash(curl -s -X POST \"http://localhost:4322/shelf?ck=zzz_apitest&status=%E8%AA%AD%E4%B8%AD\")"
     ]
   }
 }

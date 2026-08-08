@@ -1,17 +1,25 @@
 #!/usr/bin/env python3
 """
-dashgen.py — ダッシュボードの「AI生成」ボタン用ローカルヘルパー (port 4322)
+dashgen.py — ダッシュボード用ローカルヘルパー (port 4322)
 
-研究ダッシュボード.command から自動起動される。ダッシュボードのページから
-  POST /generate?ck=<citekey>  … extract.py で要約生成（バックグラウンド）
-  GET  /status?ck=<citekey>    … {"state": "running"|"done"|"error: ..."}
-  GET  /health                 … 稼働確認
-を受け、生成完了時に dashboard/ai/ と docs/dashboard/ai/ へ結果を同期する。
-ローカル(127.0.0.1)のみで待ち受ける。公開サイトとは無関係。
+研究ダッシュボード.app から自動起動される。127.0.0.1のみで待ち受け、
+公開サイトとは無関係。ダッシュボードのページから:
+
+  GET  /health                 稼働確認
+  POST /generate?ck=           extract.py でAI要約を生成（バックグラウンド）
+  GET  /status?ck=             生成状態 {"state": "running"|"done"|"error: ..."}
+  POST /shelf?ck=&status=      読書ステータス変更（未読/読中/読了）
+  POST /star?ck=&on=1|0        ★の切り替え
+  POST /hide?ck=               ダッシュボードから隠す（Zotero本体は触らない）
+  GET  /pdf?ck=                ローカルPDFをブラウザに配信
+  GET  /drafts                 ブログ下書きがある citekey 一覧
+  POST /publish?ck=            下書きを記事化して本番ブログへデプロイ
+  GET  /pubstatus?ck=          公開状態
 """
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import threading
@@ -21,18 +29,21 @@ from urllib.parse import parse_qs, urlparse
 
 BASE = Path(__file__).resolve().parent.parent          # ~/mysite
 COCKPIT = BASE / "paper-ai-project"
+DRAFTS = BASE / "notes" / "blog-drafts"
 ECON = Path.home() / "Documents" / "Zotero Paper" / "Econ.json"
+SHELF = COCKPIT / "shelf_state.json"
 PORT = 4322
+QUARTO = shutil.which("quarto") or "/usr/local/bin/quarto"
+GIT = shutil.which("git") or "/usr/bin/git"
 
 sys.path.insert(0, str(COCKPIT))
 import zotero_lib  # noqa: E402
 
-STATE = {}   # citekey -> "running" | "done" | "error: ..."
+STATE = {}   # "gen:<ck>" / "pub:<ck>" -> "running" | "done" | "error: ..."
 LOCK = threading.Lock()
 
 
 def ensure_api_key():
-    """ANTHROPIC_API_KEY が環境になければ ~/.zshrc から拾う。"""
     if os.environ.get("ANTHROPIC_API_KEY"):
         return
     zshrc = Path.home() / ".zshrc"
@@ -43,15 +54,43 @@ def ensure_api_key():
             os.environ["ANTHROPIC_API_KEY"] = m.group(1)
 
 
-def pdf_for(ck):
+def paper_of(ck):
     for p in zotero_lib.load_papers(ECON):
         if p["citekey"] == ck:
-            return p.get("pdf") or ""
-    return ""
+            return p
+    return None
 
 
-def sync_outputs(ck):
-    """生成された要約をダッシュボード（ソースと配信先の両方）へ反映。"""
+# ---------- shelf（ステータス・★・非表示）----------
+
+def load_shelf():
+    try:
+        return json.loads(SHELF.read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        return {}
+
+
+def save_shelf(shelf):
+    SHELF.write_text(json.dumps(shelf, ensure_ascii=False, indent=1),
+                     encoding="utf-8")
+    for dst in [BASE / "dashboard" / "shelf.json",
+                BASE / "docs" / "dashboard" / "shelf.json"]:
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        dst.write_text(json.dumps(shelf, ensure_ascii=False), encoding="utf-8")
+
+
+def update_shelf(ck, **kw):
+    with LOCK:
+        shelf = load_shelf()
+        entry = shelf.setdefault(ck, {"status": "未読", "star": False})
+        entry.update(kw)
+        save_shelf(shelf)
+    return shelf[ck]
+
+
+# ---------- AI要約の生成 ----------
+
+def sync_ai_outputs(ck):
     src = COCKPIT / "ai_summary" / f"{ck}.json"
     if not src.exists():
         raise FileNotFoundError(f"{src} がありません")
@@ -61,16 +100,17 @@ def sync_outputs(ck):
     keys = sorted(p.stem for p in (COCKPIT / "ai_summary").glob("*.json"))
     for lst in [BASE / "dashboard" / "ai_list.json",
                 BASE / "docs" / "dashboard" / "ai_list.json"]:
-        lst.parent.mkdir(parents=True, exist_ok=True)
         lst.write_text(json.dumps(keys, ensure_ascii=False), encoding="utf-8")
 
 
 def generate(ck):
+    key = "gen:" + ck
     try:
-        pdf = pdf_for(ck)
+        p = paper_of(ck)
+        pdf = (p or {}).get("pdf") or ""
         if not pdf or not Path(pdf).exists():
             with LOCK:
-                STATE[ck] = "error: PDFが見つかりません（Zoteroに添付されていますか？）"
+                STATE[key] = "error: PDFが見つかりません（Zoteroに添付されていますか？）"
             return
         r = subprocess.run(
             [sys.executable, str(COCKPIT / "extract.py"), pdf, "--key", ck],
@@ -78,28 +118,140 @@ def generate(ck):
         if r.returncode != 0:
             tail = (r.stderr or r.stdout or "").strip().splitlines()[-3:]
             with LOCK:
-                STATE[ck] = "error: " + " / ".join(tail)[:300]
+                STATE[key] = "error: " + " / ".join(tail)[:300]
             return
-        sync_outputs(ck)
+        sync_ai_outputs(ck)
         with LOCK:
-            STATE[ck] = "done"
+            STATE[key] = "done"
     except Exception as e:  # noqa: BLE001
         with LOCK:
-            STATE[ck] = f"error: {e}"[:300]
+            STATE[key] = f"error: {e}"[:300]
 
+
+# ---------- ブログ公開 ----------
+
+def find_draft(ck):
+    if not DRAFTS.exists():
+        return None
+    for f in DRAFTS.glob(f"*/{ck}.md"):
+        return f
+    return None
+
+
+def parse_front_matter(text):
+    m = re.match(r"^---\n(.*?)\n---\n(.*)$", text, re.S)
+    if not m:
+        return {}, text
+    meta = {}
+    for line in m.group(1).splitlines():
+        if ":" in line:
+            k, v = line.split(":", 1)
+            meta[k.strip()] = v.strip().strip('"')
+    return meta, m.group(2)
+
+
+def build_post(ck):
+    """下書き → blog/posts/<ck>/index.qmd（機械整形）。"""
+    draft = find_draft(ck)
+    if not draft:
+        raise FileNotFoundError("下書きが見つかりません")
+    meta, body = parse_front_matter(draft.read_text(encoding="utf-8"))
+    body = re.sub(r"<!--.*?-->", "", body, flags=re.S).strip()
+
+    paper = meta.get("paper", ck)
+    tag = meta.get("tag", "")
+    p = paper_of(ck) or {}
+    # description: 「一言でいうと」の最初の中身
+    m = re.search(r"##\s*一言でいうと\s*\n+([^\n#]+)", body)
+    desc = (m.group(1).strip() if m else "読書メモ")[:80]
+
+    from datetime import date
+    biblio = "**論文**：{authors} ({year}). \"{title}.\" {venue}".format(
+        authors=meta.get("authors", p.get("author", "")),
+        year=meta.get("year", p.get("year", "")),
+        title=paper, venue=("*" + p["venue"] + "*.") if p.get("venue") else "")
+    link = p.get("doi") and f" [doi:{p['doi']}](https://doi.org/{p['doi']})" or \
+           (p.get("url") and f" [リンク]({p['url']})" or "")
+
+    qmd = "\n".join([
+        "---",
+        f'title: "「{paper}」を読んだ"',
+        f'description: "{desc}"',
+        f'date: "{date.today().isoformat()}"',
+        "categories: [" + ", ".join([t for t in [tag, "読書メモ"] if t]) + "]",
+        "---",
+        "",
+        body,
+        "",
+        "---",
+        "",
+        biblio + link,
+        "",
+    ])
+    out = BASE / "blog" / "posts" / ck / "index.qmd"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(qmd, encoding="utf-8")
+    return out
+
+
+def publish(ck):
+    key = "pub:" + ck
+    try:
+        out = build_post(ck)
+        rel = str(out.relative_to(BASE))
+        subprocess.run([GIT, "add", rel], cwd=str(BASE), check=True)
+        subprocess.run([GIT, "commit", "-m", f"ブログ公開: {ck}（ダッシュボードから）"],
+                       cwd=str(BASE), capture_output=True, text=True)
+        subprocess.run([GIT, "push", "origin", "main"], cwd=str(BASE),
+                       capture_output=True, text=True, timeout=120)
+        r = subprocess.run([QUARTO, "publish", "gh-pages", "--no-browser", "--no-prompt"],
+                           cwd=str(BASE), capture_output=True, text=True, timeout=900)
+        if r.returncode != 0:
+            tail = (r.stderr or r.stdout or "").strip().splitlines()[-3:]
+            with LOCK:
+                STATE[key] = "error: " + " / ".join(tail)[:300]
+            return
+        # 下書きの status を published に
+        draft = find_draft(ck)
+        if draft:
+            t = draft.read_text(encoding="utf-8").replace(
+                "status: draft", "status: published", 1)
+            draft.write_text(t, encoding="utf-8")
+        with LOCK:
+            STATE[key] = "done"
+    except Exception as e:  # noqa: BLE001
+        with LOCK:
+            STATE[key] = f"error: {e}"[:300]
+
+
+# ---------- HTTP ----------
 
 class Handler(BaseHTTPRequestHandler):
+    def _cors(self):
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+
     def _send(self, obj, code=200):
         body = json.dumps(obj, ensure_ascii=False).encode("utf-8")
         self.send_response(code)
         self.send_header("Content-Type", "application/json; charset=utf-8")
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self._cors()
         self.end_headers()
         self.wfile.write(body)
 
     def do_OPTIONS(self):  # noqa: N802
-        self._send({"ok": True})
+        self.send_response(200)
+        self._cors()
+        self.end_headers()
+
+    def _start_thread(self, key, fn, ck):
+        with LOCK:
+            if STATE.get(key) == "running":
+                self._send({"state": "running"})
+                return
+            STATE[key] = "running"
+        threading.Thread(target=fn, args=(ck,), daemon=True).start()
+        self._send({"state": "running"})
 
     def do_GET(self):  # noqa: N802
         u = urlparse(self.path)
@@ -109,9 +261,27 @@ class Handler(BaseHTTPRequestHandler):
             self._send({"ok": True})
         elif u.path == "/status":
             with LOCK:
-                self._send({"state": STATE.get(ck, "unknown")})
-        elif u.path == "/generate":
-            self.do_POST()
+                self._send({"state": STATE.get("gen:" + ck, "unknown")})
+        elif u.path == "/pubstatus":
+            with LOCK:
+                self._send({"state": STATE.get("pub:" + ck, "unknown")})
+        elif u.path == "/drafts":
+            cks = sorted(f.stem for f in DRAFTS.glob("*/*.md")) if DRAFTS.exists() else []
+            self._send({"drafts": cks})
+        elif u.path == "/pdf":
+            p = paper_of(ck)
+            pdf = (p or {}).get("pdf") or ""
+            if pdf and Path(pdf).exists():
+                data = Path(pdf).read_bytes()
+                self.send_response(200)
+                self.send_header("Content-Type", "application/pdf")
+                self.send_header("Content-Disposition",
+                                 f'inline; filename="{ck}.pdf"')
+                self._cors()
+                self.end_headers()
+                self.wfile.write(data)
+            else:
+                self._send({"error": "PDFが見つかりません"}, 404)
         else:
             self._send({"error": "not found"}, 404)
 
@@ -119,23 +289,33 @@ class Handler(BaseHTTPRequestHandler):
         u = urlparse(self.path)
         q = parse_qs(u.query)
         ck = (q.get("ck") or [""])[0]
-        if u.path != "/generate" or not ck:
+        if not ck:
             self._send({"error": "citekeyがありません"}, 400)
             return
-        with LOCK:
-            if STATE.get(ck) == "running":
-                self._send({"state": "running"})
+        if u.path == "/generate":
+            self._start_thread("gen:" + ck, generate, ck)
+        elif u.path == "/publish":
+            self._start_thread("pub:" + ck, publish, ck)
+        elif u.path == "/shelf":
+            status = (q.get("status") or [""])[0]
+            if status not in ("未読", "読中", "読了"):
+                self._send({"error": "statusが不正です"}, 400)
                 return
-            STATE[ck] = "running"
-        threading.Thread(target=generate, args=(ck,), daemon=True).start()
-        self._send({"state": "running"})
+            self._send(update_shelf(ck, status=status))
+        elif u.path == "/star":
+            on = (q.get("on") or ["0"])[0] == "1"
+            self._send(update_shelf(ck, star=on))
+        elif u.path == "/hide":
+            self._send(update_shelf(ck, hidden=True))
+        else:
+            self._send({"error": "not found"}, 404)
 
-    def log_message(self, *a):  # 静かに
+    def log_message(self, *a):
         pass
 
 
 if __name__ == "__main__":
     ensure_api_key()
     server = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
-    print(f"dashgen: http://127.0.0.1:{PORT} (Ctrl+Cで終了)")
+    print(f"dashgen: http://127.0.0.1:{PORT}")
     server.serve_forever()

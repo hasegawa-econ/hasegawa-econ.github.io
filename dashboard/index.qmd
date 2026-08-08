@@ -6,23 +6,6 @@ toc: false
 
 ```{=html}
 <style>
-.dash-topbar {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 0.3rem;
-}
-.dash-topbar a {
-  font-family: var(--font-label);
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--ink-faint);
-  text-decoration: none;
-  border: 1px solid var(--rule);
-  padding: 0.35em 1em;
-}
-.dash-topbar a:hover { color: var(--vermilion); border-color: var(--vermilion); }
 .dash-stats {
   display: flex;
   gap: 0;
@@ -96,7 +79,14 @@ toc: false
   border-bottom: 1px solid var(--rule);
   padding: 1.3rem 0;
 }
-.dash-star { color: var(--vermilion); margin-right: 0.3rem; }
+.dash-star-btn {
+  cursor: pointer;
+  margin-right: 0.35rem;
+  color: var(--vermilion);
+  transition: opacity 0.2s ease;
+}
+.dash-star-btn.off { color: var(--rule); }
+.dash-star-btn:hover { opacity: 0.6; }
 .dash-item-title {
   font-family: var(--font-display);
   font-size: 1.08rem;
@@ -117,28 +107,25 @@ toc: false
   flex-wrap: wrap;
   align-items: center;
 }
-.dash-tag {
+.dash-tag, button.dash-status, button.ai-toggle {
   font-family: var(--font-label);
   font-size: 0.64rem;
   font-weight: 500;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--ink-faint);
+  background: none;
   border: 1px solid var(--rule);
   padding: 0.2em 0.7em;
 }
-.dash-tag.st-to-read { color: var(--vermilion); border-color: var(--vermilion); }
-.dash-tag.st-reading { color: var(--ink); border-color: var(--ink-soft); }
+button.dash-status { cursor: pointer; transition: opacity 0.2s ease; }
+button.dash-status:hover { opacity: 0.6; }
+button.dash-status.st-to-read { color: var(--vermilion); border-color: var(--vermilion); }
+button.dash-status.st-reading { color: var(--ink); border-color: var(--ink-soft); }
+button.dash-status.st-done    { color: var(--ink-faint); }
 button.ai-toggle {
-  font-family: var(--font-label);
-  font-size: 0.64rem;
   font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--ink-soft);
-  background: none;
-  border: 1px dashed var(--rule);
-  padding: 0.2em 0.7em;
+  border-style: dashed;
   cursor: pointer;
   transition: color 0.2s ease, border-color 0.2s ease;
 }
@@ -154,10 +141,7 @@ button.ai-toggle:hover, button.ai-toggle.open {
   font-size: 0.92rem;
   line-height: 2;
 }
-.dash-ai .lead {
-  font-weight: 700;
-  margin-bottom: 0.8rem;
-}
+.dash-ai .lead { font-weight: 700; margin-bottom: 0.8rem; }
 .dash-ai p { margin-bottom: 0.9rem; }
 .dash-ai p:last-child { margin-bottom: 0; }
 .dash-links {
@@ -167,9 +151,21 @@ button.ai-toggle:hover, button.ai-toggle.open {
   margin-left: auto;
   white-space: nowrap;
 }
-.dash-links a { color: var(--ink-faint); text-decoration: none; margin-left: 0.9rem; }
-.dash-links a:hover { color: var(--vermilion); }
-.dash-links a.draft { color: var(--vermilion); }
+.dash-links a, .dash-links button {
+  font-family: var(--font-label);
+  font-size: 0.72rem;
+  color: var(--ink-faint);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  margin-left: 0.9rem;
+  padding: 0;
+  letter-spacing: 0.06em;
+}
+.dash-links a:hover, .dash-links button:hover { color: var(--vermilion); }
+.dash-links a.draft, .dash-links button.pub { color: var(--vermilion); }
+.dash-links button.del:hover { color: var(--vermilion); }
 .dash-empty {
   border: 1px dashed var(--rule);
   padding: 1.6rem;
@@ -178,45 +174,54 @@ button.ai-toggle:hover, button.ai-toggle.open {
 }
 </style>
 
-<div class="dash-topbar"><a href="http://localhost:8501" target="_blank">AI要約を生成する（コックピット）↗</a></div>
 <div id="dash-root"></div>
 
 <script>
 (async function () {
   const rootEl = document.getElementById("dash-root");
-  const VAULT = "notes";  // Obsidian vault名（~/mysite/notes をvaultとして開いている前提）
+  const VAULT = "notes";
   const CONTROLLED_TAGS = ["理論", "構造推定", "因果推論", "Health"];
+  const GEN_API = "http://localhost:4322";
+  const SITE = "https://hasegawa-econ.github.io";
 
-  // 旧タグ → 統制タグの解釈（Zotero整理スクリプト実行前でも正しい構造で見せる）
   const THEORY_TAGS = new Set(["理論", "情報設計", "意思決定", "意思決定論", "統計的意思決定論",
     "スコア", "ナラティブ", "アルゴリズム", "アリゴリズム", "AI", "最適停止", "ベイズ",
     "Information", "Infromation", "Informaiton", "Inforamtion", "情報"]);
   const CAUSAL_TAGS = new Set(["因果推論", "Cousal", "Causal", "ABテスト"]);
   const HEALTH_TAGS = new Set(["Health", "health", "ヘルス"]);
 
-  async function get(path) {
+  async function get(path, base) {
     try {
-      const res = await fetch(path, { cache: "no-store" });
+      const res = await fetch((base || "") + path, { cache: "no-store" });
+      return res.ok ? await res.json() : null;
+    } catch (e) { return null; }
+  }
+  async function post(path) {
+    try {
+      const res = await fetch(GEN_API + path, { method: "POST" });
       return res.ok ? await res.json() : null;
     } catch (e) { return null; }
   }
 
-  const [data, shelf, aiListRaw] = await Promise.all([
+  const [data, shelf, aiListRaw, draftsRes] = await Promise.all([
     get("library.json"), get("shelf.json"), get("ai_list.json"),
+    get("/drafts", GEN_API),
   ]);
   const aiList = new Set(aiListRaw || []);
+  const draftSet = new Set((draftsRes && draftsRes.drafts) || []);
+  const helperUp = !!draftsRes;
 
   if (!data) {
     rootEl.innerHTML =
-      '<div class="dash-empty">まだデータがありません。デスクトップの「研究ダッシュボード.command」' +
-      'から起動すると、Zotero（Econ.json）の内容が自動で読み込まれます。</div>';
+      '<div class="dash-empty">まだデータがありません。デスクトップの「研究ダッシュボード」' +
+      'から起動すると、Zoteroの内容が自動で読み込まれます。</div>';
     return;
   }
 
-  // コレクション階層から「Theoryツリー所属のitemID」を求める
+  // Theoryツリー所属のitemID
   const cols = data.collections || {};
-  function rootName(key, seen) {
-    seen = seen || new Set();
+  function rootName(key) {
+    const seen = new Set();
     while (key && !seen.has(key)) {
       seen.add(key);
       const c = cols[key];
@@ -234,6 +239,9 @@ button.ai-toggle:hover, button.ai-toggle.open {
   }
 
   const SHELF_MAP = { "未読": "to-read", "読中": "reading", "読書中": "reading", "読了": "done" };
+  const API_STATUS = { "to-read": "未読", reading: "読中", done: "読了" };
+  const LABEL = { "to-read": "未読", reading: "読書中", done: "読了" };
+  const NEXT = { "to-read": "reading", reading: "done", done: "to-read" };
   const SKIP_TYPES = new Set(["attachment", "note", "annotation"]);
 
   const items = (Array.isArray(data) ? data : data.items || [])
@@ -252,85 +260,71 @@ button.ai-toggle:hover, button.ai-toggle.open {
         (entry && SHELF_MAP[entry.status]) ||
         ["to-read", "reading", "done"].find((s) => tags.includes(s)) ||
         "to-read";
-      // 統制タグの決定: 明示タグ → 旧タグ/コレクションからの推論 → 未分類
       let ctag = "未分類";
       if (tags.some((t) => HEALTH_TAGS.has(t))) ctag = "Health";
       else if (tags.includes("構造推定")) ctag = "構造推定";
       else if (tags.some((t) => CAUSAL_TAGS.has(t))) ctag = "因果推論";
       else if (tags.some((t) => THEORY_TAGS.has(t)) || theoryIDs.has(it.itemID)) ctag = "理論";
+      const hasPDF = (it.attachments || []).some((a) => (a.path || "").endsWith(".pdf"));
       return {
         title: it.title || "(no title)",
         authors: creators.join(", "),
         year: String(year),
         venue: it.publicationTitle || it["container-title"] || "",
         tags: tags.filter((t) => !SHELF_MAP[t] && !["to-read", "reading", "done"].includes(t)),
-        ctag,
-        status,
+        ctag, status,
         star: !!(entry && entry.star),
+        hidden: !!(entry && entry.hidden),
         hasAI: aiList.has(ck),
+        hasPDF,
         added: it.dateAdded || it.accessed || "",
         citekey: ck,
         url: it.url || it.URL || (it.DOI ? "https://doi.org/" + it.DOI : ""),
       };
-    });
+    })
+    .filter((i) => !i.hidden);
 
   items.sort((a, b) =>
     (b.star - a.star) || (b.added || "").localeCompare(a.added || ""));
 
   const STATUSES = [
-    ["to-read", "未読"],
-    ["reading", "読書中"],
-    ["done", "読了"],
-    ["all", "すべて"],
+    ["to-read", "未読"], ["reading", "読書中"], ["done", "読了"], ["all", "すべて"],
   ];
   let activeStatus = "to-read";
   let activeTag = null;
   let query = "";
-  const openAI = new Set();     // AI要約を開いている citekey
-  const aiCache = {};           // citekey → 要約JSON
-  const genState = {};          // citekey → "running" | "error: ..."
-  const GEN_API = "http://localhost:4322";
-
-  async function pollGen(ck, item) {
-    const timer = setInterval(async () => {
-      try {
-        const res = await fetch(GEN_API + "/status?ck=" + encodeURIComponent(ck));
-        const s = (await res.json()).state;
-        if (s === "done") {
-          clearInterval(timer);
-          delete genState[ck];
-          item.hasAI = true;
-          aiCache[ck] = await get("ai/" + ck + ".json");
-          openAI.add(ck);
-          render();
-        } else if (s && s.startsWith("error")) {
-          clearInterval(timer);
-          genState[ck] = s;
-          render();
-        }
-      } catch (e) { /* ヘルパー停止中はポーリング継続 */ }
-    }, 4000);
-  }
-
-  async function startGen(ck, item) {
-    try {
-      const res = await fetch(GEN_API + "/generate?ck=" + encodeURIComponent(ck), { method: "POST" });
-      if (!res.ok) throw new Error();
-      genState[ck] = "running";
-      render();
-      pollGen(ck, item);
-    } catch (e) {
-      genState[ck] = "error: 生成ヘルパーが起動していません。デスクトップの「研究ダッシュボード.command」から開き直してください。";
-      render();
-    }
-  }
+  const openAI = new Set();
+  const aiCache = {};
+  const genState = {};
+  const pubState = {};
 
   function count(s) {
     return s === "all" ? items.length : items.filter((i) => i.status === s).length;
   }
-
   function esc(t) {
     return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+  function needHelper() {
+    alert("この操作にはローカルヘルパーが必要です。デスクトップの「研究ダッシュボード」から開き直してください。");
+  }
+
+  function poll(kind, ck, onDone) {
+    const path = kind === "gen" ? "/status?ck=" : "/pubstatus?ck=";
+    const state = kind === "gen" ? genState : pubState;
+    const timer = setInterval(async () => {
+      const r = await get(path + encodeURIComponent(ck), GEN_API);
+      if (!r) return;
+      if (r.state === "done") {
+        clearInterval(timer);
+        delete state[ck];
+        await onDone();
+        render();
+      } else if (r.state && r.state.startsWith("error")) {
+        clearInterval(timer);
+        state[ck] = r.state;
+        render();
+      }
+    }, 4000);
   }
 
   function draftURI(i) {
@@ -343,19 +337,11 @@ button.ai-toggle:hover, button.ai-toggle.open {
       "citekey: " + i.citekey,
       "tag: " + i.ctag,
       "status: draft",
-      "---",
-      "",
-      "## 一言でいうと",
-      "",
-      "",
-      "## 面白かったポイント",
-      "",
-      "",
-      "## 自分の考え",
-      "",
-      "",
-      "<!-- 書き終わったらClaudeに「書いた」と言えば、整形してブログに公開します -->",
-      "",
+      "---", "",
+      "## 一言でいうと", "", "",
+      "## 面白かったポイント", "", "",
+      "## 自分の考え", "", "",
+      "<!-- 書き終わったらClaudeに「書いた」と言うか、ダッシュボードの🚀公開ボタンで公開できます -->", "",
     ].join("\n");
     return "obsidian://new?vault=" + encodeURIComponent(VAULT) +
       "&file=" + encodeURIComponent(file) +
@@ -379,9 +365,8 @@ button.ai-toggle:hover, button.ai-toggle.open {
       const okStatus = activeStatus === "all" || i.status === activeStatus;
       const okTag = !activeTag || i.ctag === activeTag;
       const q = query.toLowerCase();
-      const okQuery =
-        !q || (i.title + " " + i.authors + " " + i.venue).toLowerCase().includes(q);
-      return okStatus && okTag && okQuery;
+      return okStatus && okTag &&
+        (!q || (i.title + " " + i.authors + " " + i.venue).toLowerCase().includes(q));
     });
 
     const stats = STATUSES.map(
@@ -404,39 +389,48 @@ button.ai-toggle:hover, button.ai-toggle.open {
 
     const list = visible.length
       ? visible.map((i) => {
+          const ck = i.citekey;
           const meta = [i.authors, i.year, i.venue].filter(Boolean).join(" ・ ");
-          const zoteroLink = i.citekey
-            ? '<a href="zotero://select/items/@' + esc(i.citekey) + '">Zotero</a>'
-            : "";
+          const pdfLink = i.hasPDF
+            ? '<a href="' + GEN_API + "/pdf?ck=" + esc(ck) + '" target="_blank">PDF</a>'
+            : '<a href="zotero://select/items/@' + esc(ck) + '">Zotero</a>';
           const urlLink = i.url ? '<a href="' + esc(i.url) + '" target="_blank">原文</a>' : "";
           const draftLink = '<a class="draft" href="' + draftURI(i) + '">✍ 下書き</a>';
-          const statusLabel = { "to-read": "未読", reading: "読書中", done: "読了" }[i.status];
-          const gs = genState[i.citekey];
+          const ps = pubState[ck];
+          const pubBtn = !draftSet.has(ck) ? ""
+            : ps === "running" ? '<button class="pub" disabled>公開中…</button>'
+            : '<button class="pub" data-ck="' + esc(ck) + '">🚀 公開</button>';
+          const pubDone = ps === "done-shown"
+            ? '<a href="' + SITE + "/blog/posts/" + esc(ck) + '/" target="_blank">公開済み ↗</a>' : "";
+          const delBtn = '<button class="del" data-ck="' + esc(ck) + '" title="ダッシュボードから消す">× 消す</button>';
+          const gs = genState[ck];
           const aiBtn = i.hasAI
-            ? '<button class="ai-toggle' + (openAI.has(i.citekey) ? " open" : "") +
-              '" data-ck="' + esc(i.citekey) + '">AI要約 ' +
-              (openAI.has(i.citekey) ? "▴" : "▾") + "</button>"
+            ? '<button class="ai-toggle' + (openAI.has(ck) ? " open" : "") +
+              '" data-ck="' + esc(ck) + '">AI要約 ' + (openAI.has(ck) ? "▴" : "▾") + "</button>"
             : gs === "running"
             ? '<button class="ai-toggle open" disabled>生成中…</button>'
-            : '<button class="ai-toggle gen" data-ck="' + esc(i.citekey) + '">AI生成</button>';
-          const genError = gs && gs.startsWith("error")
-            ? '<div class="dash-ai">' + esc(gs.replace(/^error:\s*/, "")) + "</div>"
-            : "";
-          const tags =
-            '<span class="dash-tag st-' + i.status + '">' + statusLabel + "</span>" +
-            aiBtn +
+            : '<button class="ai-toggle gen" data-ck="' + esc(ck) + '">AI生成</button>';
+          const errPanel = [gs, ps]
+            .filter((s) => s && s.startsWith("error"))
+            .map((s) => '<div class="dash-ai">' + esc(s.replace(/^error:\s*/, "")) + "</div>")
+            .join("");
+          const statusBtn =
+            '<button class="dash-status st-' + i.status + '" data-ck="' + esc(ck) +
+            '" title="クリックで 未読→読書中→読了 を切り替え">' + LABEL[i.status] + "</button>";
+          const tags = statusBtn + aiBtn +
             i.tags.slice(0, 4).map((t) => '<span class="dash-tag">' + esc(t) + "</span>").join("");
-          const aiPanel = openAI.has(i.citekey) ? aiPanelHTML(i.citekey) : "";
+          const starBtn =
+            '<span class="dash-star-btn' + (i.star ? "" : " off") + '" data-ck="' + esc(ck) +
+            '" title="★を切り替え">' + (i.star ? "★" : "☆") + "</span>";
           return (
             '<div class="dash-item">' +
-            '<div class="dash-item-title">' +
-            (i.star ? '<span class="dash-star">★</span>' : "") +
+            '<div class="dash-item-title">' + starBtn +
             (i.url ? '<a href="' + esc(i.url) + '" target="_blank">' + esc(i.title) + "</a>" : esc(i.title)) +
             "</div>" +
             '<div class="dash-item-meta">' + esc(meta) + "</div>" +
             '<div class="dash-item-tags">' + tags +
-            '<span class="dash-links">' + zoteroLink + urlLink + draftLink + "</span></div>" +
-            genError + aiPanel + "</div>"
+            '<span class="dash-links">' + pdfLink + urlLink + draftLink + pubBtn + pubDone + delBtn +
+            "</span></div>" + errPanel + (openAI.has(ck) ? aiPanelHTML(ck) : "") + "</div>"
           );
         }).join("")
       : '<div class="dash-empty">該当する論文はありません。</div>';
@@ -448,24 +442,60 @@ button.ai-toggle:hover, button.ai-toggle.open {
       esc(query) + '">' + list;
 
     rootEl.querySelectorAll(".dash-stat").forEach((el) =>
-      el.addEventListener("click", () => {
-        activeStatus = el.dataset.status;
-        render();
-      })
-    );
+      el.addEventListener("click", () => { activeStatus = el.dataset.status; render(); }));
     rootEl.querySelectorAll(".dash-tagchip").forEach((el) =>
-      el.addEventListener("click", () => {
-        activeTag = el.dataset.tag || null;
-        render();
-      })
-    );
-    rootEl.querySelectorAll("button.ai-toggle.gen").forEach((el) =>
-      el.addEventListener("click", () => {
+      el.addEventListener("click", () => { activeTag = el.dataset.tag || null; render(); }));
+
+    // ステータス切り替え（未読→読書中→読了）
+    rootEl.querySelectorAll("button.dash-status").forEach((el) =>
+      el.addEventListener("click", async () => {
+        const i = items.find((x) => x.citekey === el.dataset.ck);
+        if (!helperUp) { needHelper(); return; }
+        const next = NEXT[i.status];
+        const r = await post("/shelf?ck=" + encodeURIComponent(i.citekey) +
+                             "&status=" + encodeURIComponent(API_STATUS[next]));
+        if (r) { i.status = next; render(); } else needHelper();
+      }));
+
+    // ★
+    rootEl.querySelectorAll(".dash-star-btn").forEach((el) =>
+      el.addEventListener("click", async () => {
+        const i = items.find((x) => x.citekey === el.dataset.ck);
+        if (!helperUp) { needHelper(); return; }
+        const r = await post("/star?ck=" + encodeURIComponent(i.citekey) +
+                             "&on=" + (i.star ? "0" : "1"));
+        if (r) { i.star = !i.star; render(); } else needHelper();
+      }));
+
+    // 消す（非表示。Zotero本体には残る）
+    rootEl.querySelectorAll("button.del").forEach((el) =>
+      el.addEventListener("click", async () => {
         const ck = el.dataset.ck;
-        const item = items.find((i) => i.citekey === ck);
-        startGen(ck, item);
-      })
-    );
+        const i = items.find((x) => x.citekey === ck);
+        if (!helperUp) { needHelper(); return; }
+        if (!confirm("「" + i.title.slice(0, 40) + "…」をダッシュボードから消しますか？\n（Zotero本体には残ります）")) return;
+        const r = await post("/hide?ck=" + encodeURIComponent(ck));
+        if (r) { items.splice(items.indexOf(i), 1); render(); } else needHelper();
+      }));
+
+    // AI生成
+    rootEl.querySelectorAll("button.ai-toggle.gen").forEach((el) =>
+      el.addEventListener("click", async () => {
+        const ck = el.dataset.ck;
+        if (!helperUp) { needHelper(); return; }
+        const r = await post("/generate?ck=" + encodeURIComponent(ck));
+        if (!r) { needHelper(); return; }
+        genState[ck] = "running";
+        render();
+        poll("gen", ck, async () => {
+          const i = items.find((x) => x.citekey === ck);
+          i.hasAI = true;
+          aiCache[ck] = await get("ai/" + ck + ".json");
+          openAI.add(ck);
+        });
+      }));
+
+    // AI要約の開閉
     rootEl.querySelectorAll("button.ai-toggle:not(.gen)").forEach((el) =>
       el.addEventListener("click", async () => {
         const ck = el.dataset.ck;
@@ -477,13 +507,23 @@ button.ai-toggle:hover, button.ai-toggle.open {
           aiCache[ck] = await get("ai/" + ck + ".json");
           render();
         }
-      })
-    );
+      }));
+
+    // 公開
+    rootEl.querySelectorAll("button.pub").forEach((el) =>
+      el.addEventListener("click", async () => {
+        const ck = el.dataset.ck;
+        if (!helperUp) { needHelper(); return; }
+        if (!confirm("下書きを本番ブログに公開します。よろしいですか？")) return;
+        const r = await post("/publish?ck=" + encodeURIComponent(ck));
+        if (!r) { needHelper(); return; }
+        pubState[ck] = "running";
+        render();
+        poll("pub", ck, async () => { pubState[ck] = "done-shown"; });
+      }));
+
     const search = rootEl.querySelector(".dash-search");
-    search.addEventListener("input", (e) => {
-      query = e.target.value;
-      render();
-    });
+    search.addEventListener("input", (e) => { query = e.target.value; render(); });
   }
 
   render();
