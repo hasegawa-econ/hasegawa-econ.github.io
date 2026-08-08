@@ -29,6 +29,17 @@ Safari/Chrome ──保存──▶ Zotero（本体: ~/Zotero）
 4. **メモ**：Obsidianで `notes/papers/` に1論文1ファイル（テンプレ: `notes/templates/文献メモ.md`）。研究アイデアは `notes/ideas/`
 5. **記事にする**：メモを `blog/posts/<スラッグ>/index.qmd` に清書
 
+## 論文→ブログの動線（メインの使い方）
+
+1. ダッシュボードでタグ（理論/構造推定/因果推論/Health）や検索で論文を選ぶ
+2. その論文の「**✍ 下書き**」をクリック → Obsidianが開き、
+   `notes/blog-drafts/<タグ>/<citekey>.md` に下書きが自動生成される
+   （論文情報入りの雛形。見出し: 一言でいうと／面白かったポイント／自分の考え）
+3. Obsidianで自由に書く
+4. Claudeに「**書いた**」と言う → Claudeが下書きを読み、
+   `blog/posts/<citekey>/index.qmd` に整形（タイトル・説明・カテゴリ付与）→
+   プレビュー確認 → `quarto publish gh-pages` で公開
+
 ## 公開（デプロイ）
 
 ```sh

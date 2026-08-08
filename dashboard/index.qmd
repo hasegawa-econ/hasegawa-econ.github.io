@@ -28,7 +28,7 @@ toc: false
   gap: 0;
   border-top: 1px solid var(--rule-strong);
   border-bottom: 1px solid var(--rule);
-  margin: 1rem 0 2rem;
+  margin: 1rem 0 1.4rem;
 }
 .dash-stat {
   flex: 1;
@@ -54,6 +54,30 @@ toc: false
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--ink-faint);
+}
+.dash-tagrow {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.4rem;
+}
+.dash-tagchip {
+  font-family: var(--font-label);
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  border: 1px solid var(--rule);
+  padding: 0.32em 0.9em;
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+.dash-tagchip:hover { color: var(--vermilion); border-color: var(--vermilion); }
+.dash-tagchip.active {
+  color: var(--vermilion);
+  border-color: var(--vermilion);
+  font-weight: 600;
 }
 .dash-search {
   width: 100%;
@@ -111,9 +135,11 @@ toc: false
   font-size: 0.72rem;
   letter-spacing: 0.06em;
   margin-left: auto;
+  white-space: nowrap;
 }
 .dash-links a { color: var(--ink-faint); text-decoration: none; margin-left: 0.9rem; }
 .dash-links a:hover { color: var(--vermilion); }
+.dash-links a.draft { color: var(--vermilion); }
 .dash-empty {
   border: 1px dashed var(--rule);
   padding: 1.6rem;
@@ -128,6 +154,8 @@ toc: false
 <script>
 (async function () {
   const rootEl = document.getElementById("dash-root");
+  const VAULT = "notes";  // Obsidian vault名（~/mysite/notes をvaultとして開いている前提）
+  const CONTROLLED_TAGS = ["理論", "構造推定", "因果推論", "Health"];
 
   async function get(path) {
     try {
@@ -148,11 +176,9 @@ toc: false
     return;
   }
 
-  // shelf_state.json のステータス（未読/読中/読了）を正規化
   const SHELF_MAP = { "未読": "to-read", "読中": "reading", "読書中": "reading", "読了": "done" };
   const SKIP_TYPES = new Set(["attachment", "note", "annotation"]);
 
-  // BetterBibTeX JSON ({items: [...]}) と CSL JSON ([...]) の両対応
   const items = (Array.isArray(data) ? data : data.items || [])
     .filter((it) => !SKIP_TYPES.has(it.itemType))
     .map((it) => {
@@ -175,6 +201,7 @@ toc: false
         year: String(year),
         venue: it.publicationTitle || it["container-title"] || "",
         tags: tags.filter((t) => !SHELF_MAP[t] && !["to-read", "reading", "done"].includes(t)),
+        ctag: CONTROLLED_TAGS.find((t) => tags.includes(t)) || "未分類",
         status,
         star: !!(entry && entry.star),
         hasAI: aiList.has(ck),
@@ -184,7 +211,6 @@ toc: false
       };
     });
 
-  // ★を先頭に、あとは追加日の新しい順
   items.sort((a, b) =>
     (b.star - a.star) || (b.added || "").localeCompare(a.added || ""));
 
@@ -195,6 +221,7 @@ toc: false
     ["all", "すべて"],
   ];
   let activeStatus = "to-read";
+  let activeTag = null;   // null = すべて
   let query = "";
 
   function count(s) {
@@ -205,13 +232,44 @@ toc: false
     return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
 
+  // Obsidianにブログ下書きを作るリンク（blog-drafts/<タグ>/<citekey>.md）
+  function draftURI(i) {
+    const file = "blog-drafts/" + i.ctag + "/" + (i.citekey || "無題");
+    const body = [
+      "---",
+      'paper: "' + i.title.replace(/"/g, "'") + '"',
+      "authors: " + i.authors,
+      "year: " + i.year,
+      "citekey: " + i.citekey,
+      "tag: " + i.ctag,
+      "status: draft",
+      "---",
+      "",
+      "## 一言でいうと",
+      "",
+      "",
+      "## 面白かったポイント",
+      "",
+      "",
+      "## 自分の考え",
+      "",
+      "",
+      "<!-- 書き終わったらClaudeに「書いた」と言えば、整形してブログに公開します -->",
+      "",
+    ].join("\n");
+    return "obsidian://new?vault=" + encodeURIComponent(VAULT) +
+      "&file=" + encodeURIComponent(file) +
+      "&content=" + encodeURIComponent(body);
+  }
+
   function render() {
     const visible = items.filter((i) => {
       const okStatus = activeStatus === "all" || i.status === activeStatus;
+      const okTag = !activeTag || i.ctag === activeTag;
       const q = query.toLowerCase();
       const okQuery =
         !q || (i.title + " " + i.authors + " " + i.venue).toLowerCase().includes(q);
-      return okStatus && okQuery;
+      return okStatus && okTag && okQuery;
     });
 
     const stats = STATUSES.map(
@@ -222,6 +280,16 @@ toc: false
         '<div class="dash-stat-label">' + label + "</div></div>"
     ).join("");
 
+    const tagCounts = {};
+    for (const i of items) tagCounts[i.ctag] = (tagCounts[i.ctag] || 0) + 1;
+    const chips = [null, ...CONTROLLED_TAGS, "未分類"]
+      .filter((t) => t === null || tagCounts[t])
+      .map((t) =>
+        '<span class="dash-tagchip' + (t === activeTag ? " active" : "") +
+        '" data-tag="' + (t || "") + '">' +
+        (t ? t + " " + tagCounts[t] : "すべて") + "</span>"
+      ).join("");
+
     const list = visible.length
       ? visible.map((i) => {
           const meta = [i.authors, i.year, i.venue].filter(Boolean).join(" ・ ");
@@ -229,6 +297,7 @@ toc: false
             ? '<a href="zotero://select/items/@' + esc(i.citekey) + '">Zotero</a>'
             : "";
           const urlLink = i.url ? '<a href="' + esc(i.url) + '" target="_blank">原文</a>' : "";
+          const draftLink = '<a class="draft" href="' + draftURI(i) + '">✍ 下書き</a>';
           const statusLabel = { "to-read": "未読", reading: "読書中", done: "読了" }[i.status];
           const tags =
             '<span class="dash-tag st-' + i.status + '">' + statusLabel + "</span>" +
@@ -242,19 +311,26 @@ toc: false
             "</div>" +
             '<div class="dash-item-meta">' + esc(meta) + "</div>" +
             '<div class="dash-item-tags">' + tags +
-            '<span class="dash-links">' + zoteroLink + urlLink + "</span></div></div>"
+            '<span class="dash-links">' + zoteroLink + urlLink + draftLink + "</span></div></div>"
           );
         }).join("")
       : '<div class="dash-empty">該当する論文はありません。</div>';
 
     rootEl.innerHTML =
       '<div class="dash-stats">' + stats + "</div>" +
+      '<div class="dash-tagrow">' + chips + "</div>" +
       '<input class="dash-search" type="search" placeholder="タイトル・著者・掲載誌で検索" value="' +
       esc(query) + '">' + list;
 
     rootEl.querySelectorAll(".dash-stat").forEach((el) =>
       el.addEventListener("click", () => {
         activeStatus = el.dataset.status;
+        render();
+      })
+    );
+    rootEl.querySelectorAll(".dash-tagchip").forEach((el) =>
+      el.addEventListener("click", () => {
+        activeTag = el.dataset.tag || null;
         render();
       })
     );
