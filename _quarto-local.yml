@@ -9,6 +9,7 @@ project:
     - "dashboard/library.json"
     - "dashboard/shelf.json"
     - "dashboard/ai_list.json"
+    - "dashboard/ai/*.json"
 
 website:
   navbar:

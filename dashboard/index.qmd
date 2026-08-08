@@ -129,7 +129,37 @@ toc: false
 }
 .dash-tag.st-to-read { color: var(--vermilion); border-color: var(--vermilion); }
 .dash-tag.st-reading { color: var(--ink); border-color: var(--ink-soft); }
-.dash-tag.ai-badge   { color: var(--ink-soft); border-style: dashed; }
+button.ai-toggle {
+  font-family: var(--font-label);
+  font-size: 0.64rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  background: none;
+  border: 1px dashed var(--rule);
+  padding: 0.2em 0.7em;
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+button.ai-toggle:hover, button.ai-toggle.open {
+  color: var(--vermilion);
+  border-color: var(--vermilion);
+}
+.dash-ai {
+  margin-top: 1rem;
+  padding: 1.1rem 1.3rem;
+  background: var(--code-bg);
+  border-left: 2px solid var(--vermilion);
+  font-size: 0.92rem;
+  line-height: 2;
+}
+.dash-ai .lead {
+  font-weight: 700;
+  margin-bottom: 0.8rem;
+}
+.dash-ai p { margin-bottom: 0.9rem; }
+.dash-ai p:last-child { margin-bottom: 0; }
 .dash-links {
   font-family: var(--font-label);
   font-size: 0.72rem;
@@ -148,7 +178,7 @@ toc: false
 }
 </style>
 
-<div class="dash-topbar"><a href="http://localhost:8501" target="_blank">AIコックピットを開く ↗</a></div>
+<div class="dash-topbar"><a href="http://localhost:8501" target="_blank">AI要約を生成する（コックピット）↗</a></div>
 <div id="dash-root"></div>
 
 <script>
@@ -156,6 +186,13 @@ toc: false
   const rootEl = document.getElementById("dash-root");
   const VAULT = "notes";  // Obsidian vault名（~/mysite/notes をvaultとして開いている前提）
   const CONTROLLED_TAGS = ["理論", "構造推定", "因果推論", "Health"];
+
+  // 旧タグ → 統制タグの解釈（Zotero整理スクリプト実行前でも正しい構造で見せる）
+  const THEORY_TAGS = new Set(["理論", "情報設計", "意思決定", "意思決定論", "統計的意思決定論",
+    "スコア", "ナラティブ", "アルゴリズム", "アリゴリズム", "AI", "最適停止", "ベイズ",
+    "Information", "Infromation", "Informaiton", "Inforamtion", "情報"]);
+  const CAUSAL_TAGS = new Set(["因果推論", "Cousal", "Causal", "ABテスト"]);
+  const HEALTH_TAGS = new Set(["Health", "health", "ヘルス"]);
 
   async function get(path) {
     try {
@@ -174,6 +211,26 @@ toc: false
       '<div class="dash-empty">まだデータがありません。デスクトップの「研究ダッシュボード.command」' +
       'から起動すると、Zotero（Econ.json）の内容が自動で読み込まれます。</div>';
     return;
+  }
+
+  // コレクション階層から「Theoryツリー所属のitemID」を求める
+  const cols = data.collections || {};
+  function rootName(key, seen) {
+    seen = seen || new Set();
+    while (key && !seen.has(key)) {
+      seen.add(key);
+      const c = cols[key];
+      if (!c) return "";
+      if (!c.parent) return c.name;
+      key = c.parent;
+    }
+    return "";
+  }
+  const theoryIDs = new Set();
+  for (const key of Object.keys(cols)) {
+    if (rootName(key) === "Theory") {
+      for (const iid of cols[key].items || []) theoryIDs.add(iid);
+    }
   }
 
   const SHELF_MAP = { "未読": "to-read", "読中": "reading", "読書中": "reading", "読了": "done" };
@@ -195,13 +252,19 @@ toc: false
         (entry && SHELF_MAP[entry.status]) ||
         ["to-read", "reading", "done"].find((s) => tags.includes(s)) ||
         "to-read";
+      // 統制タグの決定: 明示タグ → 旧タグ/コレクションからの推論 → 未分類
+      let ctag = "未分類";
+      if (tags.some((t) => HEALTH_TAGS.has(t))) ctag = "Health";
+      else if (tags.includes("構造推定")) ctag = "構造推定";
+      else if (tags.some((t) => CAUSAL_TAGS.has(t))) ctag = "因果推論";
+      else if (tags.some((t) => THEORY_TAGS.has(t)) || theoryIDs.has(it.itemID)) ctag = "理論";
       return {
         title: it.title || "(no title)",
         authors: creators.join(", "),
         year: String(year),
         venue: it.publicationTitle || it["container-title"] || "",
         tags: tags.filter((t) => !SHELF_MAP[t] && !["to-read", "reading", "done"].includes(t)),
-        ctag: CONTROLLED_TAGS.find((t) => tags.includes(t)) || "未分類",
+        ctag,
         status,
         star: !!(entry && entry.star),
         hasAI: aiList.has(ck),
@@ -221,8 +284,10 @@ toc: false
     ["all", "すべて"],
   ];
   let activeStatus = "to-read";
-  let activeTag = null;   // null = すべて
+  let activeTag = null;
   let query = "";
+  const openAI = new Set();     // AI要約を開いている citekey
+  const aiCache = {};           // citekey → 要約JSON
 
   function count(s) {
     return s === "all" ? items.length : items.filter((i) => i.status === s).length;
@@ -232,7 +297,6 @@ toc: false
     return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
 
-  // Obsidianにブログ下書きを作るリンク（blog-drafts/<タグ>/<citekey>.md）
   function draftURI(i) {
     const file = "blog-drafts/" + i.ctag + "/" + (i.citekey || "無題");
     const body = [
@@ -260,6 +324,18 @@ toc: false
     return "obsidian://new?vault=" + encodeURIComponent(VAULT) +
       "&file=" + encodeURIComponent(file) +
       "&content=" + encodeURIComponent(body);
+  }
+
+  function aiPanelHTML(ck) {
+    const s = aiCache[ck];
+    if (s === undefined) return '<div class="dash-ai">読み込み中…</div>';
+    if (!s) return '<div class="dash-ai">要約を読み込めませんでした。</div>';
+    const lead = s.for_public ? '<div class="lead">' + esc(s.for_public) + "</div>" : "";
+    const body = (s.narrative || s.faithful?.abstract_ja || "")
+      .split(/\n+/).filter(Boolean)
+      .map((p) => "<p>" + esc(p).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>") + "</p>")
+      .join("");
+    return '<div class="dash-ai">' + lead + body + "</div>";
   }
 
   function render() {
@@ -299,10 +375,16 @@ toc: false
           const urlLink = i.url ? '<a href="' + esc(i.url) + '" target="_blank">原文</a>' : "";
           const draftLink = '<a class="draft" href="' + draftURI(i) + '">✍ 下書き</a>';
           const statusLabel = { "to-read": "未読", reading: "読書中", done: "読了" }[i.status];
+          const aiBtn = i.hasAI
+            ? '<button class="ai-toggle' + (openAI.has(i.citekey) ? " open" : "") +
+              '" data-ck="' + esc(i.citekey) + '">AI要約 ' +
+              (openAI.has(i.citekey) ? "▴" : "▾") + "</button>"
+            : "";
           const tags =
             '<span class="dash-tag st-' + i.status + '">' + statusLabel + "</span>" +
-            (i.hasAI ? '<span class="dash-tag ai-badge">AI要約あり</span>' : "") +
+            aiBtn +
             i.tags.slice(0, 4).map((t) => '<span class="dash-tag">' + esc(t) + "</span>").join("");
+          const aiPanel = openAI.has(i.citekey) ? aiPanelHTML(i.citekey) : "";
           return (
             '<div class="dash-item">' +
             '<div class="dash-item-title">' +
@@ -311,7 +393,8 @@ toc: false
             "</div>" +
             '<div class="dash-item-meta">' + esc(meta) + "</div>" +
             '<div class="dash-item-tags">' + tags +
-            '<span class="dash-links">' + zoteroLink + urlLink + draftLink + "</span></div></div>"
+            '<span class="dash-links">' + zoteroLink + urlLink + draftLink + "</span></div>" +
+            aiPanel + "</div>"
           );
         }).join("")
       : '<div class="dash-empty">該当する論文はありません。</div>';
@@ -332,6 +415,18 @@ toc: false
       el.addEventListener("click", () => {
         activeTag = el.dataset.tag || null;
         render();
+      })
+    );
+    rootEl.querySelectorAll("button.ai-toggle").forEach((el) =>
+      el.addEventListener("click", async () => {
+        const ck = el.dataset.ck;
+        if (openAI.has(ck)) { openAI.delete(ck); render(); return; }
+        openAI.add(ck);
+        render();
+        if (aiCache[ck] === undefined) {
+          aiCache[ck] = await get("ai/" + ck + ".json");
+          render();
+        }
       })
     );
     const search = rootEl.querySelector(".dash-search");
