@@ -54,10 +54,22 @@ def ensure_api_key():
                 os.environ[name] = m.group(1)
 
 
+def econ_source():
+    """Econ.json（権限で読めない場合は同期コピー）のパスを返す。"""
+    try:
+        with open(ECON, "rb"):
+            return ECON
+    except OSError:
+        return BASE / "dashboard" / "library.json"
+
+
 def paper_of(ck):
-    for p in zotero_lib.load_papers(ECON):
-        if p["citekey"] == ck:
-            return p
+    try:
+        for p in zotero_lib.load_papers(econ_source()):
+            if p["citekey"] == ck:
+                return p
+    except Exception:  # noqa: BLE001
+        pass
     return None
 
 
@@ -93,7 +105,7 @@ def update_shelf(ck, **kw):
 def zotero_uri_of(ck):
     """Econ.json から citekey → zotero.org の uri を引く。"""
     try:
-        data = json.loads(ECON.read_text(encoding="utf-8"))
+        data = json.loads(econ_source().read_text(encoding="utf-8"))
     except Exception:  # noqa: BLE001
         return None
     for it in data.get("items", []):
@@ -311,19 +323,22 @@ class Handler(BaseHTTPRequestHandler):
             cks = sorted(f.stem for f in DRAFTS.glob("*/*.md")) if DRAFTS.exists() else []
             self._send({"drafts": cks})
         elif u.path == "/pdf":
-            p = paper_of(ck)
-            pdf = (p or {}).get("pdf") or ""
-            if pdf and Path(pdf).exists():
-                data = Path(pdf).read_bytes()
-                self.send_response(200)
-                self.send_header("Content-Type", "application/pdf")
-                self.send_header("Content-Disposition",
-                                 f'inline; filename="{ck}.pdf"')
-                self._cors()
-                self.end_headers()
-                self.wfile.write(data)
-            else:
-                self._send({"error": "PDFが見つかりません"}, 404)
+            try:
+                p = paper_of(ck)
+                pdf = (p or {}).get("pdf") or ""
+                if pdf and Path(pdf).exists():
+                    data = Path(pdf).read_bytes()
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/pdf")
+                    self.send_header("Content-Disposition",
+                                     f'inline; filename="{ck}.pdf"')
+                    self._cors()
+                    self.end_headers()
+                    self.wfile.write(data)
+                else:
+                    self._send({"error": "PDFが見つかりません"}, 404)
+            except Exception as e:  # noqa: BLE001
+                self._send({"error": f"PDFを開けませんでした: {e}"}, 500)
         else:
             self._send({"error": "not found"}, 404)
 
