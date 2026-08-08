@@ -6,6 +6,23 @@ toc: false
 
 ```{=html}
 <style>
+.dash-topbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.3rem;
+}
+.dash-topbar a {
+  font-family: var(--font-label);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  text-decoration: none;
+  border: 1px solid var(--rule);
+  padding: 0.35em 1em;
+}
+.dash-topbar a:hover { color: var(--vermilion); border-color: var(--vermilion); }
 .dash-stats {
   display: flex;
   gap: 0;
@@ -55,6 +72,7 @@ toc: false
   border-bottom: 1px solid var(--rule);
   padding: 1.3rem 0;
 }
+.dash-star { color: var(--vermilion); margin-right: 0.3rem; }
 .dash-item-title {
   font-family: var(--font-display);
   font-size: 1.08rem;
@@ -85,8 +103,9 @@ toc: false
   border: 1px solid var(--rule);
   padding: 0.2em 0.7em;
 }
-.dash-tag.status-to-read  { color: var(--vermilion); border-color: var(--vermilion); }
-.dash-tag.status-reading  { color: var(--ink); border-color: var(--ink-soft); }
+.dash-tag.st-to-read { color: var(--vermilion); border-color: var(--vermilion); }
+.dash-tag.st-reading { color: var(--ink); border-color: var(--ink-soft); }
+.dash-tag.ai-badge   { color: var(--ink-soft); border-style: dashed; }
 .dash-links {
   font-family: var(--font-label);
   font-size: 0.72rem;
@@ -103,49 +122,71 @@ toc: false
 }
 </style>
 
+<div class="dash-topbar"><a href="http://localhost:8501" target="_blank">AIコックピットを開く ↗</a></div>
 <div id="dash-root"></div>
 
 <script>
 (async function () {
   const rootEl = document.getElementById("dash-root");
-  let data = null;
-  try {
-    const res = await fetch("library.json", { cache: "no-store" });
-    if (res.ok) data = await res.json();
-  } catch (e) {}
+
+  async function get(path) {
+    try {
+      const res = await fetch(path, { cache: "no-store" });
+      return res.ok ? await res.json() : null;
+    } catch (e) { return null; }
+  }
+
+  const [data, shelf, aiListRaw] = await Promise.all([
+    get("library.json"), get("shelf.json"), get("ai_list.json"),
+  ]);
+  const aiList = new Set(aiListRaw || []);
 
   if (!data) {
     rootEl.innerHTML =
-      '<div class="dash-empty">まだデータがありません。Zotero の Better BibTeX で ' +
-      '<code>dashboard/library.json</code> への自動エクスポート' +
-      '（形式: BetterBibTeX JSON）を設定してください。</div>';
+      '<div class="dash-empty">まだデータがありません。デスクトップの「研究ダッシュボード.command」' +
+      'から起動すると、Zotero（Econ.json）の内容が自動で読み込まれます。</div>';
     return;
   }
 
-  // BetterBibTeX JSON ({items: [...]}) と CSL JSON ([...]) の両対応
-  const items = (Array.isArray(data) ? data : data.items || []).map((it) => {
-    const tags = (it.tags || []).map((t) => (typeof t === "string" ? t : t.tag));
-    const creators = it.creators
-      ? it.creators.map((c) => c.lastName || c.name).filter(Boolean)
-      : (it.author || []).map((a) => a.family || a.literal).filter(Boolean);
-    const year =
-      (it.date || "").match(/\d{4}/)?.[0] ||
-      it.issued?.["date-parts"]?.[0]?.[0] || "";
-    const status = ["to-read", "reading", "done"].find((s) => tags.includes(s)) || "その他";
-    return {
-      title: it.title || "(no title)",
-      authors: creators.join(", "),
-      year: String(year),
-      venue: it.publicationTitle || it["container-title"] || "",
-      tags,
-      status,
-      added: it.dateAdded || it.accessed || "",
-      citekey: it.citationKey || it.id || "",
-      url: it.url || it.URL || (it.DOI ? "https://doi.org/" + it.DOI : ""),
-    };
-  });
+  // shelf_state.json のステータス（未読/読中/読了）を正規化
+  const SHELF_MAP = { "未読": "to-read", "読中": "reading", "読書中": "reading", "読了": "done" };
+  const SKIP_TYPES = new Set(["attachment", "note", "annotation"]);
 
-  items.sort((a, b) => (b.added || "").localeCompare(a.added || ""));
+  // BetterBibTeX JSON ({items: [...]}) と CSL JSON ([...]) の両対応
+  const items = (Array.isArray(data) ? data : data.items || [])
+    .filter((it) => !SKIP_TYPES.has(it.itemType))
+    .map((it) => {
+      const tags = (it.tags || []).map((t) => (typeof t === "string" ? t : t.tag));
+      const creators = it.creators
+        ? it.creators.map((c) => c.lastName || c.name).filter(Boolean)
+        : (it.author || []).map((a) => a.family || a.literal).filter(Boolean);
+      const year =
+        (it.date || "").match(/\d{4}/)?.[0] ||
+        it.issued?.["date-parts"]?.[0]?.[0] || "";
+      const ck = it.citationKey || it.id || "";
+      const entry = shelf && shelf[ck];
+      const status =
+        (entry && SHELF_MAP[entry.status]) ||
+        ["to-read", "reading", "done"].find((s) => tags.includes(s)) ||
+        "to-read";
+      return {
+        title: it.title || "(no title)",
+        authors: creators.join(", "),
+        year: String(year),
+        venue: it.publicationTitle || it["container-title"] || "",
+        tags: tags.filter((t) => !SHELF_MAP[t] && !["to-read", "reading", "done"].includes(t)),
+        status,
+        star: !!(entry && entry.star),
+        hasAI: aiList.has(ck),
+        added: it.dateAdded || it.accessed || "",
+        citekey: ck,
+        url: it.url || it.URL || (it.DOI ? "https://doi.org/" + it.DOI : ""),
+      };
+    });
+
+  // ★を先頭に、あとは追加日の新しい順
+  items.sort((a, b) =>
+    (b.star - a.star) || (b.added || "").localeCompare(a.added || ""));
 
   const STATUSES = [
     ["to-read", "未読"],
@@ -161,7 +202,7 @@ toc: false
   }
 
   function esc(t) {
-    return t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
 
   function render() {
@@ -188,12 +229,15 @@ toc: false
             ? '<a href="zotero://select/items/@' + esc(i.citekey) + '">Zotero</a>'
             : "";
           const urlLink = i.url ? '<a href="' + esc(i.url) + '" target="_blank">原文</a>' : "";
-          const tags = i.tags
-            .map((t) => '<span class="dash-tag status-' + esc(t) + '">' + esc(t) + "</span>")
-            .join("");
+          const statusLabel = { "to-read": "未読", reading: "読書中", done: "読了" }[i.status];
+          const tags =
+            '<span class="dash-tag st-' + i.status + '">' + statusLabel + "</span>" +
+            (i.hasAI ? '<span class="dash-tag ai-badge">AI要約あり</span>' : "") +
+            i.tags.slice(0, 4).map((t) => '<span class="dash-tag">' + esc(t) + "</span>").join("");
           return (
             '<div class="dash-item">' +
             '<div class="dash-item-title">' +
+            (i.star ? '<span class="dash-star">★</span>' : "") +
             (i.url ? '<a href="' + esc(i.url) + '" target="_blank">' + esc(i.title) + "</a>" : esc(i.title)) +
             "</div>" +
             '<div class="dash-item-meta">' + esc(meta) + "</div>" +

@@ -7,6 +7,8 @@ project:
     - "**/*.qmd"
   resources:
     - "dashboard/library.json"
+    - "dashboard/shelf.json"
+    - "dashboard/ai_list.json"
 
 website:
   navbar:

@@ -10,5 +10,12 @@ __pycache__/
 # ===== 非公開の研究データ（このリポジトリは公開されているため）=====
 # Obsidian vault（文献メモ・研究アイデア）
 /notes/
-# Zotero からの自動エクスポート（読書リスト）
+# Zotero からの自動エクスポート（読書リスト）とコックピット同期データ
 /dashboard/library.json
+/dashboard/shelf.json
+/dashboard/ai_list.json
+
+# ===== 移行検討中の持ち込みフォルダ（コミット禁止）=====
+/Zotero/
+/paper-ai-project/
+/tetete/

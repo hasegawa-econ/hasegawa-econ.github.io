@@ -4,7 +4,12 @@
       "Bash(gh run *)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" https://hasegawa-econ.github.io)",
       "Bash(curl -s https://hasegawa-econ.github.io)",
-      "Bash(quarto render *)"
+      "Bash(quarto render *)",
+      "Bash(git add *)",
+      "Bash(git commit -q -m '運用ガイド WORKFLOW.md を追加 *)",
+      "Bash(git push *)",
+      "Bash(ls -lat ~/Desktop | head -15; echo \"=== Downloads ===\"; ls -lat ~/Downloads | head -15)",
+      "Bash(head -30 tetete/README.md; echo \"=== add_notes.js 冒頭 ===\"; head -15 Zotero/add_notes.js; echo \"=== deploy.sh ===\"; head -15 Zotero/deploy.sh; echo \"=== 本物のZoteroデータの場所確認 ===\"; ls ~/Zotero 2>/dev/null | head -3; ls \"/Users/user/Documents/Zotero Paper/\" 2>/dev/null | head -5)"
     ]
   }
 }
