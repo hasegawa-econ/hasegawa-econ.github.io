@@ -422,10 +422,13 @@ button.ai-toggle:hover, button.ai-toggle.open {
           const starBtn =
             '<span class="dash-star-btn' + (i.star ? "" : " off") + '" data-ck="' + esc(ck) +
             '" title="★を切り替え">' + (i.star ? "★" : "☆") + "</span>";
+          const titleHref = i.hasPDF
+            ? GEN_API + "/pdf?ck=" + encodeURIComponent(ck)
+            : i.url;
           return (
             '<div class="dash-item">' +
             '<div class="dash-item-title">' + starBtn +
-            (i.url ? '<a href="' + esc(i.url) + '" target="_blank">' + esc(i.title) + "</a>" : esc(i.title)) +
+            (titleHref ? '<a href="' + esc(titleHref) + '" target="_blank">' + esc(i.title) + "</a>" : esc(i.title)) +
             "</div>" +
             '<div class="dash-item-meta">' + esc(meta) + "</div>" +
             '<div class="dash-item-tags">' + tags +
