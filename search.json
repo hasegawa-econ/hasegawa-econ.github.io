@@ -56,6 +56,13 @@
     "text": "次にやること\n\nlazy() を使った遅延評価を試す\n自分が普段書く前処理スクリプトを1本まるごと Polars で書き直してみる\nベンチマークを実際に取って、どのくらい速いのか数字で確認する\n\n\n学習ログはこんな感じで、その日触ったことをサクッと残していく予定です。"
   },
   {
+    "objectID": "blog/index.html",
+    "href": "blog/index.html",
+    "title": "ブログ",
+    "section": "",
+    "text": "Krishna et al. (2026)「Pareto Improvements in the Contest for College Admissions」を読んだ\n\n\n\n理論\n\n読書メモ\n\n\n\n大学入試コンテストのパレート改善についての読書メモ\n\n\n\n\n\nAug 8, 2026\n\n1 min\n\n\n\n\n\n\n学習ログ #1：Polars に入門してみた\n\n\n\n学習ログ\n\nPython\n\nデータ処理\n\n\n\npandas から Polars に乗り換えるメリットを、実務でよくある処理を書き換えながら確認した初日のメモ。\n\n\n\n\n\nApr 30, 2026\n\n1 min\n\n\n\n\n\n\nはじめての技術記事：Pythonでデータ可視化\n\n\n\nPython\n\nData Visualization\n\nTutorial\n\n\n\nmatplotlibとseabornを使ってきれいなグラフを作る方法\n\n\n\n\n\nJan 15, 2024\n\n1 min\n\n\n\n\nNo matching items"
+  },
+  {
     "objectID": "about.html",
     "href": "about.html",
     "title": "About",
@@ -84,11 +91,32 @@
     "text": "This Site\nThis site is built with Quarto and hosted on GitHub Pages.\nThe source code is available here."
   },
   {
-    "objectID": "blog/index.html",
-    "href": "blog/index.html",
-    "title": "ブログ",
+    "objectID": "blog/posts/krishna_2026_pareto/index.html",
+    "href": "blog/posts/krishna_2026_pareto/index.html",
+    "title": "Krishna et al. (2026)「Pareto Improvements in the Contest for College Admissions」を読んだ",
     "section": "",
-    "text": "学習ログ #1：Polars に入門してみた\n\n\n\n学習ログ\n\nPython\n\nデータ処理\n\n\n\npandas から Polars に乗り換えるメリットを、実務でよくある処理を書き換えながら確認した初日のメモ。\n\n\n\n\n\nApr 30, 2026\n\n1 min\n\n\n\n\n\n\nはじめての技術記事：Pythonでデータ可視化\n\n\n\nPython\n\nData Visualization\n\nTutorial\n\n\n\nmatplotlibとseabornを使ってきれいなグラフを作る方法\n\n\n\n\n\nJan 15, 2024\n\n1 min\n\n\n\n\nNo matching items"
+    "text": "面白い。"
+  },
+  {
+    "objectID": "blog/posts/krishna_2026_pareto/index.html#一言でいうと",
+    "href": "blog/posts/krishna_2026_pareto/index.html#一言でいうと",
+    "title": "Krishna et al. (2026)「Pareto Improvements in the Contest for College Admissions」を読んだ",
+    "section": "",
+    "text": "面白い。"
+  },
+  {
+    "objectID": "blog/posts/krishna_2026_pareto/index.html#面白かったポイント",
+    "href": "blog/posts/krishna_2026_pareto/index.html#面白かったポイント",
+    "title": "Krishna et al. (2026)「Pareto Improvements in the Contest for College Admissions」を読んだ",
+    "section": "面白かったポイント",
+    "text": "面白かったポイント\n面白い。"
+  },
+  {
+    "objectID": "blog/posts/krishna_2026_pareto/index.html#自分の考え",
+    "href": "blog/posts/krishna_2026_pareto/index.html#自分の考え",
+    "title": "Krishna et al. (2026)「Pareto Improvements in the Contest for College Admissions」を読んだ",
+    "section": "自分の考え",
+    "text": "自分の考え\n面白い。\n\n論文：Krishna, Lychagin, Olszewski, Siegel & Tergiman (2026). “Pareto Improvements in the Contest for College Admissions.” The Review of Economic Studies. doi:10.1093/restud/rdaf033"
   },
   {
     "objectID": "blog/posts/sample-post/index.html",

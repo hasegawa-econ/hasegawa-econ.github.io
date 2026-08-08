@@ -2,6 +2,7 @@
   {
     "listing": "/blog/index.html",
     "items": [
+      "/blog/posts/krishna_2026_pareto/index.html",
       "/blog/posts/learning-log-01-polars/index.html",
       "/blog/posts/sample-post/index.html"
     ]
